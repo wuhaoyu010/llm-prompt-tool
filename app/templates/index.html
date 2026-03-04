@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大模型提示词管理与测试工具</title>
+    <!-- 本地资源（支持离线使用） -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/fonts/inter-offline.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/fonts/material-icons-offline.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- 添加 favicon 避免 404 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+</head>
+<body data-theme="dark">
+    <!-- 顶部导航栏 -->
+    <nav class="top-nav">
+        <div class="logo-container">
+            <span class="material-icons logo-icon">psychology</span>
+            <h1>大模型提示词管理与测试工具</h1>
+        </div>
+        <div class="nav-icons">
+            <span class="material-icons" id="theme-toggle" title="切换主题">dark_mode</span>
+            <span class="material-icons">search</span>
+            <span class="material-icons">notifications</span>
+            <span class="material-icons settings" id="settings-btn" title="系统设置">settings</span>
+            <span class="material-icons user-avatar">account_circle</span>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <!-- 左侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3>缺陷列表</h3>
+            </div>
+            <nav class="defect-list" id="defect-list">
+                <!-- 缺陷列表项将通过 JS 动态生成 -->
+            </nav>
+            <div class="sidebar-footer">
+                <button id="add-defect-btn" class="btn btn-secondary full-width">+ 添加新类别</button>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 模块一：缺陷编辑 -->
+            <section class="card">
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <h2 id="defect-title">请选择一个缺陷类别</h2>
+                        <span id="defect-version-tag" class="version-tag">V1.0</span>
+                    </div>
+                    <div class="info-card-actions">
+                        <div class="version-selector">
+                            <span class="material-icons">history</span>
+                            <select id="version-dropdown">
+                                <option>加载中...</option>
+                            </select>
+                        </div>
+                        <button id="edit-global-template-btn" class="btn btn-secondary">编辑全局模板</button>
+                        <button id="publish-version-btn" class="btn btn-success">发布新版本</button>
+                    </div>
+                </div>
+
+                <div class="editor-grid" id="defect-editor-grid">
+                    <div class="editor-card">
+                        <h4>DEFECT_CN (中文名称)</h4>
+                        <textarea id="editor-defect_cn" placeholder="输入中文名称..."></textarea>
+                    </div>
+                    <div class="editor-card">
+                        <h4>DEFECT_CLASS (缺陷分类)</h4>
+                        <textarea id="editor-defect_class" placeholder="输入缺陷分类..."></textarea>
+                    </div>
+                    <div class="editor-card">
+                        <h4>JUDGMENT_POINTS (判断点)</h4>
+                        <textarea id="editor-judgment_points" placeholder="输入判断点..."></textarea>
+                    </div>
+                    <div class="editor-card">
+                        <h4>EXCLUSIONS (排除项)</h4>
+                        <textarea id="editor-exclusions" placeholder="输入排除项..."></textarea>
+                    </div>
+                </div>
+                <div class="editor-actions">
+                    <button id="cancel-edit-btn" class="btn btn-secondary">取消修改</button>
+                    <button id="save-preview-btn" class="btn btn-primary">保存并推理对比</button>
+                </div>
+            </section>
+
+            <!-- 模块二：测试用例在线标注 -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>🎯 测试用例在线标注</h2>
+                </div>
+                <div class="card-body annotation-layout">
+                    <div class="canvas-wrapper" id="canvas-wrapper">
+                        <canvas id="annotation-canvas"></canvas>
+                        <div id="upload-placeholder" class="upload-placeholder">
+                            <span class="material-icons">cloud_upload</span>
+                            <p>点击或拖拽上传图片</p>
+                        </div>
+                        <input type="file" id="image-upload-input" accept="image/*" hidden>
+                    </div>
+                    <div class="toolbox">
+                        <h4>测试用例</h4>
+                        <div class="test-case-list-small" id="test-case-list">
+                            <!-- 测试用例缩略图 -->
+                        </div>
+                        <h4>工具 <span class="shortcut-hint">快捷键</span></h4>
+                        <div class="tool-buttons">
+                            <button id="draw-box-btn" class="btn btn-secondary tool-btn" title="画框 (Ctrl+D)">
+                                <span class="material-icons">crop_din</span>
+                                <span class="tool-label">画框</span>
+                            </button>
+                            <button id="undo-btn" class="btn btn-secondary tool-btn" title="撤销 (Ctrl+Z)">
+                                <span class="material-icons">undo</span>
+                                <span class="tool-label">撤销</span>
+                            </button>
+                            <button id="clear-canvas-btn" class="btn btn-secondary tool-btn" title="清空 (Del)">
+                                <span class="material-icons">clear</span>
+                                <span class="tool-label">清空</span>
+                            </button>
+                        </div>
+                        <div class="shortcuts-help">
+                            <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>S</kbd> 保存</div>
+                            <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>D</kbd> 画框</div>
+                            <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>Z</kbd> 撤销</div>
+                            <div class="shortcut-item"><kbd>Del</kbd> 删除选中</div>
+                            <div class="shortcut-item"><kbd>Esc</kbd> 退出绘制</div>
+                        </div>
+                        <div class="toolbox-footer">
+                            <button id="add-test-case-btn" class="btn btn-success full-width">添加为测试用例</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 模块三：实时推理对比 -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>🔄 实时推理对比</h2>
+                    <div class="header-actions">
+                        <select id="model-selector" class="model-select">
+                            <option value="Pro/Qwen/Qwen2.5-VL-7B-Instruct">Qwen2.5-VL-7B</option>
+                            <option value="Qwen/Qwen3-VL-8B-Instruct">Qwen3-VL-8B</option>
+                        </select>
+                        <button id="run-comparison-btn" class="btn btn-primary">运行对比</button>
+                    </div>
+                </div>
+                <div id="comparison-container" class="card-body">
+                    <div class="empty-state">
+                        <span class="material-icons">compare</span>
+                        <p>请先选择一个测试用例并点击"运行对比"</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 模块四：回归测试报告 -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>📊 回归测试报告</h2>
+                    <button id="run-regression-btn" class="btn btn-primary">开始运行</button>
+                </div>
+                <div id="regression-report-container" class="card-body">
+                    <div class="empty-state">
+                        <span class="material-icons">assessment</span>
+                        <p>点击"开始运行"对当前选中版本执行完整回归测试</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 模块五：提示词修改历史 -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>📜 提示词修改历史</h2>
+                    <button id="export-history-btn" class="btn btn-secondary btn-sm">
+                        <span class="material-icons">download</span> 导出CSV
+                    </button>
+                </div>
+                <div class="card-body">
+                    <table id="history-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>版本号</th>
+                                <th>修改人</th>
+                                <th>修改摘要</th>
+                                <th>测试通过率</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 模态框 -->
+    <div id="modal-backdrop" class="modal-backdrop"></div>
+    <div id="global-template-modal" class="modal"></div>
+    <div id="add-defect-modal" class="modal"></div>
+    <div id="settings-modal" class="modal"></div>
+    
+    <!-- 通知容器 -->
+    <div id="notification-container" class="notification-container"></div>
+
+    <!-- 本地资源（支持离线使用） -->
+    <script src="{{ url_for('static', filename='vendor/js/fabric.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>

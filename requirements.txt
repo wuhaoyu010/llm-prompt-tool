@@ -1,0 +1,6 @@
+requests
+Werkzeug
+Flask-SQLAlchemy
+Flask
+Pillow
+paramiko
