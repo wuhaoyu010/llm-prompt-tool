@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: prompt-tool
+    ports:
+      - "5001:5001"
+    volumes:
+      # Persist database
+      - ./data/app:/app/app
+      # Persist uploads
+      - ./data/uploads:/app/app/uploads
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=your-secret-key-change-in-production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# Named volumes for persistence
+volumes:
+  app-data:
+  uploads-data:

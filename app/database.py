@@ -10,7 +10,7 @@ class LLMConfig(db.Model):
     """大模型API配置"""
     id = db.Column(db.Integer, primary_key=True)
     api_key = db.Column(db.String(500), nullable=False, default='')
-    api_url = db.Column(db.String(500), nullable=False, default='https://api.siliconflow.cn/v1/chat/completions')
+    api_url = db.Column(db.String(500), nullable=False, default='https://api.siliconflow.cn')
     default_model = db.Column(db.String(100), nullable=False, default='Pro/Qwen/Qwen2.5-VL-7B-Instruct')
     temperature = db.Column(db.Float, nullable=False, default=0.7)
     max_tokens = db.Column(db.Integer, nullable=False, default=1000)
@@ -130,6 +130,7 @@ class TestCase(db.Model):
     defect_id = db.Column(db.Integer, db.ForeignKey('defect.id'), nullable=False)
     filename = db.Column(db.String(200), nullable=False)
     filepath = db.Column(db.String(500), nullable=False)
+    is_positive = db.Column(db.Boolean, default=True)  # True=正样本, False=负样本
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     bounding_boxes = db.relationship('BoundingBox', backref='test_case', lazy=True, cascade="all, delete-orphan")
     test_results = db.relationship('TestResult', backref='test_case', lazy=True, cascade="all, delete-orphan")
@@ -140,6 +141,7 @@ class TestCase(db.Model):
             "defect_id": self.defect_id,
             "filename": self.filename,
             "filepath": self.filepath,
+            "is_positive": self.is_positive,
             "created_at": self.created_at.isoformat(),
             "bounding_boxes": [bbox.to_dict() for bbox in self.bounding_boxes]
         }
@@ -148,21 +150,10 @@ class BoundingBox(db.Model):
     """标注框"""
     id = db.Column(db.Integer, primary_key=True)
     test_case_id = db.Column(db.Integer, db.ForeignKey('test_case.id'), nullable=False)
-    # 归一化坐标 [0, 999]
     norm_x_min = db.Column(db.Integer, nullable=False)
     norm_y_min = db.Column(db.Integer, nullable=False)
     norm_x_max = db.Column(db.Integer, nullable=False)
     norm_y_max = db.Column(db.Integer, nullable=False)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'test_case_id': self.test_case_id,
-            'norm_x_min': self.norm_x_min,
-            'norm_y_min': self.norm_y_min,
-            'norm_x_max': self.norm_x_max,
-            'norm_y_max': self.norm_y_max,
-        }
 
     def to_dict(self):
         return {
