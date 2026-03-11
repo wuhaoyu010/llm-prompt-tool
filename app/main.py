@@ -1058,7 +1058,11 @@ def get_available_models():
                 'owned_by': model.get('owned_by', '')
             })
 
-        return jsonify({'models': models})
+        # 返回模型列表和默认模型
+        return jsonify({
+            'models': models,
+            'default_model': config.default_model if config.default_model else (models[0]['id'] if models else None)
+        })
     except requests.exceptions.RequestException as e:
         return jsonify({'error': f'获取模型列表失败: {str(e)}', 'models': []}), 500
 

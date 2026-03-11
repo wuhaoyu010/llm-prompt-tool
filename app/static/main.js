@@ -305,6 +305,196 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
     };
+    
+    // --- 组合选择器组件 (Combo Select) ---
+    class ComboSelect {
+        constructor(options = {}) {
+            this.options = {
+                placeholder: '请选择模型...',
+                searchPlaceholder: '搜索模型...',
+                noResultsText: '没有找到匹配的模型',
+                loadingText: '加载中...',
+                allowCustom: true, // 允许自定义输入
+                ...options
+            };
+            this.models = [];
+            this.filteredModels = [];
+            this.selectedValue = '';
+            this.isOpen = false;
+            this.container = null;
+            this.input = null;
+            this.dropdown = null;
+            this.searchInput = null;
+            this.onChange = options.onChange || (() => {});
+        }
+        
+        create() {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'combo-select-wrapper';
+            
+            wrapper.innerHTML = `
+                <div class="combo-select-container">
+                    <input type="text" class="combo-select-input" placeholder="${this.options.placeholder}" autocomplete="off">
+                    <button type="button" class="combo-select-toggle" tabindex="-1">
+                        <span class="material-icons">expand_more</span>
+                    </button>
+                </div>
+                <div class="combo-select-dropdown">
+                    <div class="combo-select-search">
+                        <input type="text" placeholder="${this.options.searchPlaceholder}">
+                    </div>
+                    <div class="combo-select-options"></div>
+                </div>
+            `;
+            
+            this.container = wrapper.querySelector('.combo-select-container');
+            this.input = wrapper.querySelector('.combo-select-input');
+            this.dropdown = wrapper.querySelector('.combo-select-dropdown');
+            this.searchInput = wrapper.querySelector('.combo-select-search input');
+            this.optionsContainer = wrapper.querySelector('.combo-select-options');
+            this.toggleBtn = wrapper.querySelector('.combo-select-toggle');
+            
+            this.bindEvents();
+            return wrapper;
+        }
+        
+        bindEvents() {
+            // 点击输入框打开下拉
+            this.input.addEventListener('focus', () => this.open());
+            
+            // 点击切换按钮
+            this.toggleBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (this.isOpen) {
+                    this.close();
+                } else {
+                    this.open();
+                }
+            });
+            
+            // 输入框输入事件
+            this.input.addEventListener('input', (e) => {
+                const value = e.target.value;
+                this.selectedValue = value;
+                this.filterOptions(value);
+                if (!this.isOpen) this.open();
+            });
+            
+            // 搜索框输入事件
+            this.searchInput.addEventListener('input', (e) => {
+                this.filterOptions(e.target.value);
+            });
+            
+            // 点击外部关闭
+            document.addEventListener('click', (e) => {
+                if (!this.container.parentElement.contains(e.target)) {
+                    this.close();
+                }
+            });
+            
+            // 键盘事件
+            this.input.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    this.close();
+                } else if (e.key === 'Enter' && this.filteredModels.length > 0) {
+                    this.selectOption(this.filteredModels[0]);
+                    this.close();
+                }
+            });
+        }
+        
+        open() {
+            this.isOpen = true;
+            this.dropdown.classList.add('open');
+            this.toggleBtn.classList.add('open');
+            // 不自动聚焦搜索框，让用户可以直接在输入框中输入
+            this.filterOptions(this.input.value);
+        }
+
+        close() {
+            this.isOpen = false;
+            this.dropdown.classList.remove('open');
+            this.toggleBtn.classList.remove('open');
+            this.searchInput.value = '';
+        }
+        
+        setModels(models) {
+            this.models = models || [];
+            this.filteredModels = [...this.models];
+            this.renderOptions();
+        }
+        
+        filterOptions(query) {
+            const lowerQuery = query.toLowerCase();
+            this.filteredModels = this.models.filter(model => 
+                model.id.toLowerCase().includes(lowerQuery) ||
+                (model.name && model.name.toLowerCase().includes(lowerQuery)) ||
+                (model.owned_by && model.owned_by.toLowerCase().includes(lowerQuery))
+            );
+            this.renderOptions();
+        }
+        
+        renderOptions() {
+            if (this.models.length === 0) {
+                this.optionsContainer.innerHTML = `
+                    <div class="combo-select-loading">
+                        <span class="material-icons">sync</span>
+                        <div>${this.options.loadingText}</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            if (this.filteredModels.length === 0) {
+                this.optionsContainer.innerHTML = `
+                    <div class="combo-select-empty">${this.options.noResultsText}</div>
+                `;
+                return;
+            }
+            
+            this.optionsContainer.innerHTML = this.filteredModels.map(model => `
+                <div class="combo-select-option ${model.id === this.selectedValue ? 'selected' : ''}" data-value="${model.id}">
+                    <div class="model-name">${model.name || model.id}</div>
+                    ${model.owned_by ? `<div class="model-owner">${model.owned_by}</div>` : ''}
+                </div>
+            `).join('');
+            
+            // 绑定选项点击事件
+            this.optionsContainer.querySelectorAll('.combo-select-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    const value = option.dataset.value;
+                    const model = this.models.find(m => m.id === value);
+                    this.selectOption(model);
+                    this.close();
+                });
+            });
+        }
+        
+        selectOption(model) {
+            this.selectedValue = model.id;
+            this.input.value = model.name || model.id;
+            this.onChange(model);
+            this.renderOptions();
+        }
+        
+        getValue() {
+            return this.input.value;
+        }
+        
+        setValue(value) {
+            this.selectedValue = value;
+            this.input.value = value;
+            const model = this.models.find(m => m.id === value);
+            if (model) {
+                this.input.value = model.name || model.id;
+            }
+        }
+        
+        setDisabled(disabled) {
+            this.input.disabled = disabled;
+            this.toggleBtn.disabled = disabled;
+        }
+    }
 
     // --- App 主逻辑 ---
     const App = {
@@ -313,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.initCanvas();
             this.bindEventListeners();
             this.loadDefects();
-            this.loadModels();
+            this.initModelSelector();
             this.checkLLMHealth();
             // 每30秒检查一次健康状态
             setInterval(() => this.checkLLMHealth(), 30000);
@@ -367,6 +557,43 @@ document.addEventListener('DOMContentLoaded', () => {
             this.showInitialState();
         },
 
+        async initModelSelector() {
+            // 初始化实时推理对比处的模型选择器
+            const container = document.getElementById('model-selector-container');
+            if (!container) return;
+
+            this.modelSelectorCombo = new ComboSelect({
+                placeholder: '选择推理模型...',
+                searchPlaceholder: '搜索模型名称...',
+                noResultsText: '没有找到匹配的模型',
+                loadingText: '加载模型列表中...',
+                onChange: (model) => {
+                    console.log('Selected model for inference:', model);
+                }
+            });
+
+            container.appendChild(this.modelSelectorCombo.create());
+
+            // 加载模型列表
+            try {
+                const result = await api.get('/api/models');
+                const models = result.models || [];
+
+                this.modelSelectorCombo.setModels(models);
+
+                // 设置默认值：优先使用数据库中的默认模型，其次使用第一个模型
+                const defaultModel = result.default_model || (models.length > 0 ? models[0].id : null);
+                if (defaultModel) {
+                    this.modelSelectorCombo.setValue(defaultModel);
+                }
+            } catch (error) {
+                console.error('加载模型列表失败:', error);
+                // 显示错误提示
+                this.modelSelectorCombo.input.value = '请先配置 API Key';
+                this.modelSelectorCombo.input.disabled = true;
+            }
+        },
+
         async loadModels() {
             try {
                 const result = await api.get('/api/models');
@@ -394,6 +621,44 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('加载模型列表失败:', error);
                 dom.modelSelector.innerHTML = '<option value="">加载失败</option>';
+            }
+        },
+
+        async loadModelsForCombo(comboSelect, defaultValue = null) {
+            try {
+                const result = await api.get('/api/models');
+                const models = result.models || [];
+
+                comboSelect.setModels(models);
+
+                // 设置默认值：优先使用传入的默认值，其次使用API返回的第一个模型
+                if (defaultValue) {
+                    comboSelect.setValue(defaultValue);
+                } else if (models.length > 0) {
+                    comboSelect.selectOption(models[0]);
+                }
+            } catch (error) {
+                console.error('加载模型列表失败:', error);
+            }
+        },
+
+        async refreshInferenceModelSelector() {
+            // 刷新实时推理对比处的模型选择器，使用全局配置中的默认模型
+            if (!this.modelSelectorCombo) return;
+
+            try {
+                const result = await api.get('/api/models');
+                const models = result.models || [];
+
+                this.modelSelectorCombo.setModels(models);
+
+                // 使用全局配置中的默认模型
+                const defaultModel = result.default_model || (models.length > 0 ? models[0].id : null);
+                if (defaultModel) {
+                    this.modelSelectorCombo.setValue(defaultModel);
+                }
+            } catch (error) {
+                console.error('刷新推理模型选择器失败:', error);
             }
         },
 
@@ -1854,7 +2119,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 edited_params: editedParams,
                 test_case_id: testCaseId,
                 use_real_llm: useRealLLM,
-                model_name: dom.modelSelector.value,
+                model_name: this.modelSelectorCombo ? this.modelSelectorCombo.getValue() : '',
             };
             
             Loading.show(useRealLLM ? '正在调用大模型推理...' : '正在运行模拟对比...');
@@ -1977,7 +2242,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const payload = {
                 version_id: state.currentVersionId,
                 use_real_llm: true,
-                model_name: dom.modelSelector.value,
+                model_name: this.modelSelectorCombo ? this.modelSelectorCombo.getValue() : '',
             };
             
             const regressionContainer = document.getElementById('regression-report-container');
@@ -2425,10 +2690,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div class="form-item">
                             <label>默认模型</label>
-                            <select id="settings-default-model">
-                                <option value="Pro/Qwen/Qwen2.5-VL-7B-Instruct" ${safeLlmConfig.default_model === 'Pro/Qwen/Qwen2.5-VL-7B-Instruct' ? 'selected' : ''}>Qwen2.5-VL-7B-Instruct</option>
-                                <option value="Qwen/Qwen3-VL-8B-Instruct" ${safeLlmConfig.default_model === 'Qwen/Qwen3-VL-8B-Instruct' ? 'selected' : ''}>Qwen3-VL-8B-Instruct</option>
-                            </select>
+                            <div id="settings-default-model-container"></div>
                         </div>
                         <div class="form-row">
                             <div class="form-item">
@@ -2490,6 +2752,23 @@ document.addEventListener('DOMContentLoaded', () => {
             this.showModals();
             dom.settingsModal.style.display = 'block';
             
+            // 初始化默认模型组合选择器
+            const defaultModelContainer = document.getElementById('settings-default-model-container');
+            const defaultModelCombo = new ComboSelect({
+                placeholder: '选择默认模型...',
+                searchPlaceholder: '搜索模型名称...',
+                onChange: (model) => {
+                    console.log('Selected model:', model);
+                }
+            });
+            defaultModelContainer.appendChild(defaultModelCombo.create());
+            
+            // 加载模型列表并设置当前值
+            this.loadModelsForCombo(defaultModelCombo, safeLlmConfig.default_model);
+            
+            // 保存组合选择器实例以便后续获取值
+            this.defaultModelCombo = defaultModelCombo;
+            
             // 绑定设置标签切换
             document.querySelectorAll('.settings-tab').forEach(tab => {
                 tab.onclick = () => {
@@ -2547,7 +2826,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const llmData = {
                     api_key: document.getElementById('settings-api-key').value,
                     api_url: document.getElementById('settings-api-url').value,
-                    default_model: document.getElementById('settings-default-model').value,
+                    default_model: this.defaultModelCombo ? this.defaultModelCombo.getValue() : '',
                     temperature: parseFloat(document.getElementById('settings-temperature').value),
                     max_tokens: parseInt(document.getElementById('settings-max-tokens').value),
                 };
@@ -2564,8 +2843,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 await api.post('/api/trueno3_config', trueno3Data);
 
-                // 刷新模型选择器
-                await this.loadModels();
+                // 刷新实时推理对比处的模型选择器，使用最新的默认模型
+                await this.refreshInferenceModelSelector();
                 await this.checkLLMHealth();
 
                 this.hideModals();
