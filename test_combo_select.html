@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>组合选择器测试</title>
+    <link rel="stylesheet" href="app/static/style.css">
+    <link rel="stylesheet" href="app/static/vendor/fonts/material-icons-offline.css">
+</head>
+<body data-theme="dark" style="padding: 40px;">
+    <h1>组合选择器功能测试</h1>
+    
+    <h2>功能说明</h2>
+    <ul>
+        <li>✅ 从 API 动态加载模型列表</li>
+        <li>✅ 默认选择第一个模型或数据库中的默认模型</li>
+        <li>✅ 点击输入框或下拉按钮展开选项</li>
+        <li>✅ 在下拉框中搜索过滤模型</li>
+        <li>✅ 直接在输入框中编辑自定义模型名称</li>
+        <li>✅ 键盘支持: Enter 选择, Escape 关闭</li>
+    </ul>
+    
+    <h2>测试区域</h2>
+    <div style="max-width: 400px; margin: 20px 0;">
+        <label style="display: block; margin-bottom: 8px;">模型选择器:</label>
+        <div id="test-container"></div>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <button onclick="showValue()" style="padding: 10px 20px; background: #4F46E5; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            获取当前值
+        </button>
+        <span id="current-value" style="margin-left: 10px;"></span>
+    </div>
+
+    <script>
+        // 模拟 ComboSelect 类
+        class ComboSelect {
+            constructor(options = {}) {
+                this.options = {
+                    placeholder: '请选择模型...',
+                    searchPlaceholder: '搜索模型...',
+                    noResultsText: '没有找到匹配的模型',
+                    loadingText: '加载中...',
+                    allowCustom: true,
+                    ...options
+                };
+                this.models = [];
+                this.filteredModels = [];
+                this.selectedValue = '';
+                this.isOpen = false;
+                this.container = null;
+                this.input = null;
+                this.dropdown = null;
+                this.searchInput = null;
+                this.onChange = options.onChange || (() => {});
+            }
+            
+            create() {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'combo-select-wrapper';
+                
+                wrapper.innerHTML = `
+                    <div class="combo-select-container">
+                        <input type="text" class="combo-select-input" placeholder="${this.options.placeholder}" autocomplete="off">
+                        <button type="button" class="combo-select-toggle" tabindex="-1">
+                            <span class="material-icons">expand_more</span>
+                        </button>
+                    </div>
+                    <div class="combo-select-dropdown">
+                        <div class="combo-select-search">
+                            <input type="text" placeholder="${this.options.searchPlaceholder}">
+                        </div>
+                        <div class="combo-select-options"></div>
+                    </div>
+                `;
+                
+                this.container = wrapper.querySelector('.combo-select-container');
+                this.input = wrapper.querySelector('.combo-select-input');
+                this.dropdown = wrapper.querySelector('.combo-select-dropdown');
+                this.searchInput = wrapper.querySelector('.combo-select-search input');
+                this.optionsContainer = wrapper.querySelector('.combo-select-options');
+                this.toggleBtn = wrapper.querySelector('.combo-select-toggle');
+                
+                this.bindEvents();
+                return wrapper;
+            }
+            
+            bindEvents() {
+                this.input.addEventListener('focus', () => this.open());
+                
+                this.toggleBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (this.isOpen) {
+                        this.close();
+                    } else {
+                        this.open();
+                    }
+                });
+                
+                this.input.addEventListener('input', (e) => {
+                    const value = e.target.value;
+                    this.selectedValue = value;
+                    this.filterOptions(value);
+                    if (!this.isOpen) this.open();
+                });
+                
+                this.searchInput.addEventListener('input', (e) => {
+                    this.filterOptions(e.target.value);
+                });
+                
+                document.addEventListener('click', (e) => {
+                    if (!this.container.parentElement.contains(e.target)) {
+                        this.close();
+                    }
+                });
+                
+                this.input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.close();
+                    } else if (e.key === 'Enter' && this.filteredModels.length > 0) {
+                        this.selectOption(this.filteredModels[0]);
+                        this.close();
+                    }
+                });
+            }
+            
+            open() {
+                this.isOpen = true;
+                this.dropdown.classList.add('open');
+                this.toggleBtn.classList.add('open');
+                this.searchInput.focus();
+                this.filterOptions(this.input.value);
+            }
+            
+            close() {
+                this.isOpen = false;
+                this.dropdown.classList.remove('open');
+                this.toggleBtn.classList.remove('open');
+                this.searchInput.value = '';
+            }
+            
+            setModels(models) {
+                this.models = models || [];
+                this.filteredModels = [...this.models];
+                this.renderOptions();
+            }
+            
+            filterOptions(query) {
+                const lowerQuery = query.toLowerCase();
+                this.filteredModels = this.models.filter(model => 
+                    model.id.toLowerCase().includes(lowerQuery) ||
+                    (model.name && model.name.toLowerCase().includes(lowerQuery)) ||
+                    (model.owned_by && model.owned_by.toLowerCase().includes(lowerQuery))
+                );
+                this.renderOptions();
+            }
+            
+            renderOptions() {
+                if (this.models.length === 0) {
+                    this.optionsContainer.innerHTML = `
+                        <div class="combo-select-loading">
+                            <span class="material-icons">sync</span>
+                            <div>${this.options.loadingText}</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                if (this.filteredModels.length === 0) {
+                    this.optionsContainer.innerHTML = `
+                        <div class="combo-select-empty">${this.options.noResultsText}</div>
+                    `;
+                    return;
+                }
+                
+                this.optionsContainer.innerHTML = this.filteredModels.map(model => `
+                    <div class="combo-select-option ${model.id === this.selectedValue ? 'selected' : ''}" data-value="${model.id}">
+                        <div class="model-name">${model.name || model.id}</div>
+                        ${model.owned_by ? `<div class="model-owner">${model.owned_by}</div>` : ''}
+                    </div>
+                `).join('');
+                
+                this.optionsContainer.querySelectorAll('.combo-select-option').forEach(option => {
+                    option.addEventListener('click', () => {
+                        const value = option.dataset.value;
+                        const model = this.models.find(m => m.id === value);
+                        this.selectOption(model);
+                        this.close();
+                    });
+                });
+            }
+            
+            selectOption(model) {
+                this.selectedValue = model.id;
+                this.input.value = model.name || model.id;
+                this.onChange(model);
+                this.renderOptions();
+            }
+            
+            getValue() {
+                return this.input.value;
+            }
+            
+            setValue(value) {
+                this.selectedValue = value;
+                this.input.value = value;
+                const model = this.models.find(m => m.id === value);
+                if (model) {
+                    this.input.value = model.name || model.id;
+                }
+            }
+            
+            setDisabled(disabled) {
+                this.input.disabled = disabled;
+                this.toggleBtn.disabled = disabled;
+            }
+        }
+
+        // 初始化测试
+        const combo = new ComboSelect({
+            placeholder: '选择推理模型...',
+            searchPlaceholder: '搜索模型名称...',
+            onChange: (model) => {
+                console.log('选中模型:', model);
+            }
+        });
+
+        document.getElementById('test-container').appendChild(combo.create());
+
+        // 模拟加载模型
+        setTimeout(() => {
+            const mockModels = [
+                { id: 'Pro/Qwen/Qwen2.5-VL-7B-Instruct', name: 'Qwen2.5-VL-7B-Instruct', owned_by: 'Qwen' },
+                { id: 'Qwen/Qwen3-VL-8B-Instruct', name: 'Qwen3-VL-8B-Instruct', owned_by: 'Qwen' },
+                { id: 'Pro/Qwen/Qwen2-VL-7B-Instruct', name: 'Qwen2-VL-7B-Instruct', owned_by: 'Qwen' },
+                { id: 'deepseek-ai/deepseek-vl-7b-chat', name: 'DeepSeek-VL-7B-Chat', owned_by: 'DeepSeek' },
+                { id: 'OpenGVLab/InternVL-Chat-ViT-6B', name: 'InternVL-Chat-ViT-6B', owned_by: 'OpenGVLab' },
+            ];
+            
+            combo.setModels(mockModels);
+            combo.setValue('Pro/Qwen/Qwen2.5-VL-7B-Instruct'); // 设置默认值
+        }, 500);
+
+        function showValue() {
+            const value = combo.getValue();
+            document.getElementById('current-value').textContent = `当前值: ${value}`;
+            alert(`当前选择的模型: ${value}`);
+        }
+    </script>
+</body>
+</html>
