@@ -1015,7 +1015,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initCanvas() {
             const canvasEl = dom.annotationCanvas;
             const wrapper = dom.canvasWrapper;
-            
+
             const setCanvasSize = () => {
                 canvasEl.width = wrapper.clientWidth;
                 canvasEl.height = wrapper.clientHeight;
@@ -1026,12 +1026,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
+            // 防抖处理resize事件，避免频繁重绘导致闪屏
+            let resizeTimeout = null;
+            const debouncedSetCanvasSize = () => {
+                if (resizeTimeout) clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(setCanvasSize, 100);
+            };
+
             state.fabricCanvas = new fabric.Canvas(canvasEl, {
                 backgroundColor: 'transparent',
             });
 
             setCanvasSize();
-            window.addEventListener('resize', setCanvasSize);
+            window.addEventListener('resize', debouncedSetCanvasSize);
             
             // 矩形绘制模式变量
             let isDrawingRect = false;

@@ -1880,7 +1880,7 @@ input[type="email"] {
     opacity: 0;
 }
 
-/* 光晕效果 */
+/* 光晕效果 - 禁用无限动画以避免远程桌面闪屏 */
 .notification::before {
     content: '';
     position: absolute;
@@ -1894,7 +1894,8 @@ input[type="email"] {
         transparent 50%
     );
     pointer-events: none;
-    animation: glow-pulse 3s ease-in-out infinite;
+    /* animation: glow-pulse 3s ease-in-out infinite; - 禁用以避免远程桌面闪屏 */
+    opacity: 0.5;
 }
 
 @keyframes glow-pulse {
@@ -2119,11 +2120,11 @@ input[type="email"] {
     white-space: nowrap;
 }
 
-/* 在线状态 */
+/* 在线状态 - 禁用无限动画以避免远程桌面闪屏 */
 .llm-status-indicator.online .status-dot {
     background: var(--success-color);
     box-shadow: 0 0 8px var(--success-color);
-    animation: pulse 2s infinite;
+    /* animation: pulse 2s infinite; - 禁用以避免远程桌面闪屏 */
 }
 
 .llm-status-indicator.online .status-text {
@@ -2140,10 +2141,11 @@ input[type="email"] {
     color: var(--error-color);
 }
 
-/* 检查中状态 */
+/* 检查中状态 - 使用静态样式避免远程桌面闪屏 */
 .llm-status-indicator.checking .status-dot {
     background: var(--warning-color);
-    animation: blink 1s infinite;
+    /* animation: blink 1s infinite; - 禁用以避免远程桌面闪屏 */
+    opacity: 0.7;
 }
 
 .llm-status-indicator.checking .status-text {
