@@ -54,4 +54,4 @@ data/
 Thumbs.db
 
 node_modules/
-app/prompt_tool_v2.db
+*.db
