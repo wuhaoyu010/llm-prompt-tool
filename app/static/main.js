@@ -423,7 +423,22 @@ document.addEventListener('DOMContentLoaded', () => {
             this.filteredModels = [...this.models];
             this.renderOptions();
         }
-        
+
+        setLoading(isLoading) {
+            if (isLoading) {
+                this.input.value = '';
+                this.input.placeholder = this.options.loadingText;
+                this.optionsContainer.innerHTML = `
+                    <div class="combo-select-loading">
+                        <span class="material-icons">sync</span>
+                        <div>${this.options.loadingText}</div>
+                    </div>
+                `;
+            } else {
+                this.input.placeholder = this.options.placeholder;
+            }
+        }
+
         filterOptions(query) {
             const lowerQuery = query.toLowerCase();
             this.filteredModels = this.models.filter(model => 
@@ -2689,8 +2704,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             <input type="text" id="settings-api-url" value="${safeLlmConfig.api_url || 'https://api.siliconflow.cn/v1/chat/completions'}" placeholder="https://api.siliconflow.cn/v1/chat/completions">
                         </div>
                         <div class="form-item">
-                            <label>默认模型</label>
+                            <label>默认模型 <span class="hint">（可选择或手动输入）</span></label>
                             <div id="settings-default-model-container"></div>
+                            <div style="margin-top: 8px;">
+                                <button id="test-model-btn" class="btn-secondary">🧪 测试模型可用性</button>
+                                <span id="model-test-result" class="hint"></span>
+                            </div>
                         </div>
                         <div class="form-row">
                             <div class="form-item">
@@ -2768,7 +2787,52 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // 保存组合选择器实例以便后续获取值
             this.defaultModelCombo = defaultModelCombo;
-            
+
+            // 监听 API Key 和 API URL 变化，自动刷新模型列表
+            let refreshModelsTimeout = null;
+            const refreshModelsPreview = async () => {
+                const apiKey = document.getElementById('settings-api-key').value;
+                const apiUrl = document.getElementById('settings-api-url').value;
+
+                if (!apiKey || !apiUrl) {
+                    return;
+                }
+
+                try {
+                    // 显示加载状态
+                    defaultModelCombo.setLoading(true);
+
+                    const result = await api.post('/api/models/preview', {
+                        api_key: apiKey,
+                        api_url: apiUrl
+                    });
+
+                    const models = result.models || [];
+                    defaultModelCombo.setModels(models);
+
+                    // 如果有模型，默认选中第一个
+                    if (models.length > 0) {
+                        defaultModelCombo.setValue(models[0].id);
+                    }
+                } catch (error) {
+                    console.error('刷新模型列表失败:', error);
+                    defaultModelCombo.setModels([]);
+                    defaultModelCombo.input.value = '获取模型失败';
+                }
+            };
+
+            // 使用防抖，避免频繁请求
+            const debouncedRefreshModels = () => {
+                if (refreshModelsTimeout) {
+                    clearTimeout(refreshModelsTimeout);
+                }
+                refreshModelsTimeout = setTimeout(refreshModelsPreview, 500);
+            };
+
+            // 绑定输入框变化事件
+            document.getElementById('settings-api-key').addEventListener('input', debouncedRefreshModels);
+            document.getElementById('settings-api-url').addEventListener('input', debouncedRefreshModels);
+
             // 绑定设置标签切换
             document.querySelectorAll('.settings-tab').forEach(tab => {
                 tab.onclick = () => {
@@ -2815,7 +2879,56 @@ document.addEventListener('DOMContentLoaded', () => {
                     resultSpan.style.color = '#ea4335';
                 }
             };
-            
+
+            // 测试模型可用性
+            document.getElementById('test-model-btn').onclick = async () => {
+                const resultSpan = document.getElementById('model-test-result');
+                const modelName = this.defaultModelCombo ? this.defaultModelCombo.getValue() : '';
+
+                if (!modelName) {
+                    resultSpan.textContent = ' ✗ 请先选择或输入模型名称';
+                    resultSpan.style.color = '#ea4335';
+                    return;
+                }
+
+                const apiKey = document.getElementById('settings-api-key').value;
+                const apiUrl = document.getElementById('settings-api-url').value;
+
+                if (!apiKey) {
+                    resultSpan.textContent = ' ✗ 请输入 API Key';
+                    resultSpan.style.color = '#ea4335';
+                    return;
+                }
+
+                if (!apiUrl) {
+                    resultSpan.textContent = ' ✗ 请输入 API URL';
+                    resultSpan.style.color = '#ea4335';
+                    return;
+                }
+
+                resultSpan.textContent = ' 测试中...';
+                resultSpan.style.color = 'var(--text-secondary)';
+
+                try {
+                    const result = await api.post('/api/models/test', {
+                        api_key: apiKey,
+                        api_url: apiUrl,
+                        model_name: modelName
+                    });
+
+                    if (result.success) {
+                        resultSpan.textContent = ' ✓ ' + result.message;
+                        resultSpan.style.color = 'var(--success-color)';
+                    } else {
+                        resultSpan.textContent = ' ✗ ' + result.error;
+                        resultSpan.style.color = '#ea4335';
+                    }
+                } catch (error) {
+                    resultSpan.textContent = ' ✗ 测试失败: ' + error.message;
+                    resultSpan.style.color = '#ea4335';
+                }
+            };
+
             document.getElementById('cancel-settings-btn').onclick = () => this.hideModals();
             document.getElementById('save-settings-btn').onclick = async () => {
                 // 保存Prompt模板

@@ -12,6 +12,45 @@ from werkzeug.utils import secure_filename
 from .database import db, init_db, GlobalPromptTemplate, LLMConfig, Trueno3Config, Defect, DefectVersion, TestCase, BoundingBox, TestResult
 from PIL import Image, ImageDraw
 
+
+def normalize_api_url(api_url, endpoint='chat/completions'):
+    """
+    标准化 API URL，支持各种输入格式
+
+    支持的输入格式:
+    - https://api.example.com
+    - https://api.example.com/v1
+    - https://api.example.com/v1/chat/completions
+    - https://api.example.com/compatible-mode
+    - https://api.example.com/compatible-mode/v1
+
+    返回:
+    - base_url: 用于 /v1/models 等接口
+    - full_url: 用于 chat/completions 接口
+    """
+    if not api_url:
+        api_url = "https://api.siliconflow.cn"
+
+    url = api_url.rstrip('/')
+
+    # 提取 base_url（移除 /v1/chat/completions 等路径）
+    base_url = url
+    if '/chat/completions' in base_url:
+        base_url = base_url.split('/chat/completions')[0]
+    if base_url.endswith('/v1'):
+        base_url = base_url[:-3]
+
+    # 构建完整 URL
+    if endpoint == 'chat/completions':
+        full_url = base_url + '/v1/chat/completions'
+    elif endpoint == 'models':
+        full_url = base_url + '/v1/models'
+    else:
+        full_url = base_url + '/v1/' + endpoint
+
+    return base_url, full_url
+
+
 def get_data_dir():
     """获取数据目录路径（支持 PyInstaller 打包）"""
     if getattr(sys, 'frozen', False):
@@ -966,6 +1005,20 @@ def delete_test_case(test_case_id):
     db.session.commit()
     return jsonify({'success': True, 'message': 'Test case deleted'})
 
+
+@app.route('/api/testcase/<int:test_case_id>/type', methods=['PUT'])
+def update_test_case_type(test_case_id):
+    """更新测试用例类型（正例/反例）"""
+    case = TestCase.query.get_or_404(test_case_id)
+    data = request.get_json() or {}
+    is_positive = data.get('is_positive', True)
+
+    case.is_positive = is_positive
+    db.session.commit()
+
+    return jsonify({'success': True, 'message': f'测试用例已更新为{"正例" if is_positive else "反例"}'})
+
+
 # --- Asynchronous Task Handling ---
 
 def _run_comparison_task(task_id, data, app_context):
@@ -1032,6 +1085,100 @@ def get_task_status(task_id):
         return jsonify({'error': 'Task not found'}), 404
     return jsonify(task)
 
+@app.route('/api/models/test', methods=['POST'])
+def test_model():
+    """测试指定模型是否可用"""
+    data = request.get_json() or {}
+    api_key = data.get('api_key', '')
+    api_url = data.get('api_url', '')
+    model_name = data.get('model_name', '')
+
+    if not api_key:
+        return jsonify({'success': False, 'error': 'API Key 不能为空'}), 400
+    if not api_url:
+        return jsonify({'success': False, 'error': 'API URL 不能为空'}), 400
+    if not model_name:
+        return jsonify({'success': False, 'error': '模型名称不能为空'}), 400
+
+    # 使用统一的 URL 处理函数
+    _, full_url = normalize_api_url(api_url, 'chat/completions')
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    # 发送一个简单的测试请求
+    test_payload = {
+        "model": model_name,
+        "messages": [{"role": "user", "content": "hi"}],
+        "max_tokens": 10
+    }
+
+    try:
+        response = requests.post(full_url, headers=headers, json=test_payload, timeout=30)
+
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': f'模型 "{model_name}" 可用'})
+        else:
+            # 尝试解析错误详情
+            try:
+                error_data = response.json()
+                error_msg = error_data.get('error', {})
+                if isinstance(error_msg, dict):
+                    error_type = error_msg.get('type', '')
+                    error_message = error_msg.get('message', f'HTTP {response.status_code}')
+                    # 提供更友好的错误提示
+                    if response.status_code == 404:
+                        error_message = f'模型 "{model_name}" 不存在或当前 API Key 无权访问'
+                    elif response.status_code == 401:
+                        error_message = 'API Key 无效或已过期'
+                    elif response.status_code == 403:
+                        error_message = '无权访问此模型，请检查账户余额或权限'
+                    return jsonify({'success': False, 'error': error_message, 'details': str(error_data)})
+                else:
+                    return jsonify({'success': False, 'error': str(error_msg)})
+            except:
+                return jsonify({'success': False, 'error': f'HTTP {response.status_code}'})
+
+    except requests.exceptions.Timeout:
+        return jsonify({'success': False, 'error': '请求超时，请检查网络连接'})
+    except requests.exceptions.RequestException as e:
+        return jsonify({'success': False, 'error': f'请求失败: {str(e)}'})
+
+
+@app.route('/api/models/preview', methods=['POST'])
+def preview_models():
+    """预览指定 API 配置的模型列表（用于设置页面实时刷新）"""
+    data = request.get_json() or {}
+    api_key = data.get('api_key', '')
+    api_url = data.get('api_url', '')
+
+    if not api_key:
+        return jsonify({'error': 'API Key 不能为空', 'models': []}), 400
+
+    # 使用统一的 URL 处理函数
+    base_url, models_url = normalize_api_url(api_url, 'models')
+    headers = {"Authorization": f"Bearer {api_key}"}
+
+    try:
+        response = requests.get(models_url, headers=headers, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+
+        models = []
+        for model in data.get('data', []):
+            models.append({
+                'id': model.get('id'),
+                'name': model.get('id'),
+                'owned_by': model.get('owned_by', '')
+            })
+
+        return jsonify({'models': models})
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'获取模型列表失败: {str(e)}', 'models': []}), 500
+
+
 @app.route('/api/models', methods=['GET'])
 def get_available_models():
     """从配置的API获取可用模型列表"""
@@ -1039,8 +1186,8 @@ def get_available_models():
     if not config or not config.api_key:
         return jsonify({'error': 'API Key 未配置', 'models': []}), 400
 
-    base_url = config.api_url.rstrip('/') if config.api_url else "https://api.siliconflow.cn"
-    models_url = f"{base_url}/v1/models"
+    # 使用统一的 URL 处理函数
+    base_url, models_url = normalize_api_url(config.api_url, 'models')
 
     headers = {"Authorization": f"Bearer {config.api_key}"}
 
@@ -1079,9 +1226,8 @@ def check_llm_health():
             'details': '请在系统设置中配置 API Key'
         })
 
-    # 尝试调用 models 接口检查服务可用性
-    base_url = config.api_url.rstrip('/') if config.api_url else "https://api.siliconflow.cn"
-    models_url = f"{base_url}/v1/models"
+    # 使用统一的 URL 处理函数
+    base_url, models_url = normalize_api_url(config.api_url, 'models')
 
     headers = {"Authorization": f"Bearer {config.api_key}"}
 
