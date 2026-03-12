@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-server-puppeteer"]
+    },
+    "pdf-tools": {
+      "command": "npx",
+      "args": ["-y", "@sylphlab/tools-pdf"]
+    },
+    "mcp-pdf": {
+      "command": "npx",
+      "args": ["-y", "mcp-pdf"]
+    }
+  }
+}
