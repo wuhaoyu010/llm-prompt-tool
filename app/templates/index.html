@@ -109,7 +109,12 @@
                             <span class="stat"><strong id="stat-total">0</strong> 总数</span>
                             <span class="stat positive"><strong id="stat-positive">0</strong> 正例</span>
                             <span class="stat negative"><strong id="stat-negative">0</strong> 反例</span>
+                            <span class="stat annotated" id="annotation-progress"><strong id="stat-annotated">0</strong>/<strong id="stat-total-count">0</strong> 已标注</span>
                         </div>
+                        <button id="batch-defect-auto-annotate-btn" class="btn btn-accent btn-sm" title="批量缺陷自动标注">
+                            <span class="material-icons">auto_awesome</span>
+                            <span class="btn-text">批量标注</span>
+                        </button>
                         <button id="batch-import-btn" class="btn btn-secondary btn-sm" title="批量导入图片">
                             <span class="material-icons">add_photo_alternate</span>
                             <span class="btn-text">批量导入</span>
@@ -145,6 +150,10 @@
                                     </button>
                                     <button id="batch-set-positive-btn" class="btn btn-sm" title="设为正例">✓ 正例</button>
                                     <button id="batch-set-negative-btn" class="btn btn-sm" title="设为反例">✗ 反例</button>
+                                    <button id="batch-auto-annotate-btn" class="btn btn-primary btn-sm" title="自动标注">
+                                        <span class="material-icons" style="font-size: 16px;">auto_awesome</span>
+                                        <span>自动标注</span>
+                                    </button>
                                 </div>
                             </div>
                             <div class="thumbnail-scroll-wrapper" id="thumbnail-scroll-wrapper">
@@ -164,23 +173,41 @@
                                     <span class="material-icons">crop_din</span>
                                     <span class="tool-label">画框</span>
                                 </button>
+                                <button id="pan-btn" class="btn btn-secondary tool-btn" title="平移 (Space)">
+                                    <span class="material-icons">pan_tool</span>
+                                    <span class="tool-label">平移</span>
+                                </button>
                                 <button id="undo-btn" class="btn btn-secondary tool-btn" title="撤销 (Ctrl+Z)">
                                     <span class="material-icons">undo</span>
                                     <span class="tool-label">撤销</span>
+                                </button>
+                                <button id="reset-view-btn" class="btn btn-secondary tool-btn" title="重置视图 (Ctrl+0)">
+                                    <span class="material-icons">fit_screen</span>
+                                    <span class="tool-label">重置</span>
                                 </button>
                                 <button id="clear-canvas-btn" class="btn btn-secondary tool-btn" title="清空 (Del)">
                                     <span class="material-icons">clear</span>
                                     <span class="tool-label">清空</span>
                                 </button>
                             </div>
+                            <div class="zoom-indicator" id="zoom-indicator">100%</div>
                             <div class="shortcuts-help collapsible" id="shortcuts-panel">
                                 <div class="shortcut-group">
                                     <div class="shortcut-title">标注操作</div>
                                     <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>S</kbd> 保存</div>
                                     <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>D</kbd> 画框</div>
                                     <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>Z</kbd> 撤销</div>
+                                    <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>C</kbd> 复制框</div>
+                                    <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>V</kbd> 粘贴框</div>
                                     <div class="shortcut-item"><kbd>Del</kbd> 删除选中</div>
                                     <div class="shortcut-item"><kbd>Esc</kbd> 退出绘制</div>
+                                </div>
+                                <div class="shortcut-group">
+                                    <div class="shortcut-title">视图操作</div>
+                                    <div class="shortcut-item"><kbd>Space</kbd> 平移模式</div>
+                                    <div class="shortcut-item"><kbd>滚轮</kbd> 缩放</div>
+                                    <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>0</kbd> 重置视图</div>
+                                    <div class="shortcut-item"><kbd>中键拖拽</kbd> 平移</div>
                                 </div>
                                 <div class="shortcut-group">
                                     <div class="shortcut-title">导航操作</div>
@@ -394,6 +421,64 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary modal-cancel">取消</button>
                 <button id="batch-import-execute-btn" class="btn btn-primary" disabled>开始导入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义确认弹框 -->
+    <div id="confirm-modal" class="modal confirm-modal">
+        <div class="modal-content confirm-content">
+            <span class="modal-close material-icons">close</span>
+            <div class="confirm-icon" id="confirm-icon">
+                <span class="material-icons">help_outline</span>
+            </div>
+            <div class="confirm-title" id="confirm-title">确认操作</div>
+            <div class="confirm-message" id="confirm-message"></div>
+            <div class="confirm-options" id="confirm-options">
+                <label class="confirm-checkbox">
+                    <input type="checkbox" id="confirm-checkbox">
+                    <span id="confirm-checkbox-label"></span>
+                </label>
+            </div>
+            <div class="confirm-actions">
+                <button class="btn btn-secondary" id="confirm-cancel">取消</button>
+                <button class="btn btn-primary" id="confirm-ok">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量缺陷自动标注模态框 -->
+    <div id="batch-defect-annotate-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🤖 批量缺陷自动标注</h3>
+                <span class="modal-close material-icons">close</span>
+            </div>
+            <div class="modal-body">
+                <div class="batch-defect-info">
+                    <p class="hint">从服务获取可自动标注的缺陷列表，选择需要标注的缺陷进行批量处理。</p>
+                </div>
+                <div class="form-item">
+                    <label>
+                        <input type="checkbox" id="batch-defect-clear-existing" checked>
+                        清除现有标注框
+                    </label>
+                </div>
+                <div id="batch-defect-loading" class="batch-defect-loading" style="display: none;">
+                    <span class="material-icons spinning">sync</span>
+                    <span>正在获取服务缺陷列表...</span>
+                </div>
+                <div id="batch-defect-list" class="batch-defect-list">
+                    <!-- 缺陷列表将通过JS动态生成 -->
+                </div>
+                <div id="batch-defect-error" class="batch-defect-error" style="display: none;">
+                    <span class="material-icons">error_outline</span>
+                    <span id="batch-defect-error-msg"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary modal-cancel">取消</button>
+                <button id="batch-defect-execute-btn" class="btn btn-primary" disabled>开始标注</button>
             </div>
         </div>
     </div>

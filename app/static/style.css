@@ -641,6 +641,46 @@ input[type="email"] {
     background: rgba(239, 68, 68, 0.9);
 }
 
+/* 单图自动标注按钮 */
+.thumbnail-item .auto-annotate-btn {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(79, 70, 229, 0.85);
+    border: none;
+    color: white;
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.thumbnail-item:hover .auto-annotate-btn {
+    opacity: 1;
+}
+
+.thumbnail-item .auto-annotate-btn:hover {
+    background: var(--primary-color);
+    transform: scale(1.1);
+}
+
+.thumbnail-item .auto-annotate-btn.loading {
+    background: rgba(79, 70, 229, 0.6);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
 /* 提示文字 */
 .upload-placeholder .hint-text {
     font-size: 12px;
@@ -1156,7 +1196,25 @@ input[type="email"] {
 .modal-close:hover {
     color: var(--error-color);
 }
-.modal-body { padding: 24px; }
+.modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    max-height: 60vh;
+    scroll-behavior: smooth;
+}
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+.modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+.modal-body::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 4px;
+}
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
 .modal-body .form-item { margin-bottom: 16px; }
 .modal-body label { 
     display: block; 
@@ -1224,6 +1282,33 @@ input[type="email"] {
 
 .settings-tab-content.active {
     display: block;
+}
+
+.settings-section-divider {
+    margin: 24px 0 16px 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--glass-border);
+}
+
+.settings-section-divider:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.settings-section-divider h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.settings-section-divider .hint {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: normal;
+    margin-top: 0;
+    margin-bottom: 16px;
 }
 
 .form-row {
@@ -2365,6 +2450,16 @@ input[type="email"] {
     color: var(--error-color);
 }
 
+.annotation-stats .stat.annotated {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(139, 92, 246, 0.2));
+    padding: 4px 12px;
+    border-radius: 12px;
+}
+
+.annotation-stats .stat.annotated strong {
+    color: var(--primary-color);
+}
+
 .modal-lg {
     max-width: 700px;
     width: 90%;
@@ -2512,6 +2607,292 @@ input[type="email"] {
     font-size: 13px;
     color: var(--text-secondary);
     text-align: center;
+}
+
+/* --- 批量缺陷自动标注 --- */
+.batch-defect-info {
+    margin-bottom: 16px;
+}
+
+.batch-defect-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+}
+
+.batch-defect-loading .spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.batch-defect-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 16px;
+}
+
+.batch-defect-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.batch-defect-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--primary-color);
+}
+
+.batch-defect-item.selected {
+    background: rgba(79, 70, 229, 0.15);
+    border-color: var(--primary-color);
+}
+
+.batch-defect-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+}
+
+.batch-defect-item .defect-info {
+    flex: 1;
+}
+
+.batch-defect-item .defect-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.batch-defect-item .defect-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.batch-defect-item .defect-status {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(79, 70, 229, 0.2);
+    color: var(--primary-color);
+}
+
+.batch-defect-item .defect-status.no-match {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--error-color);
+}
+
+.batch-defect-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 10px;
+    color: var(--error-color);
+    margin-top: 16px;
+}
+
+/* --- 自定义确认弹框 --- */
+.confirm-modal {
+    z-index: 1100;
+}
+
+.confirm-modal .confirm-content {
+    max-width: 400px;
+    padding: 32px;
+    text-align: center;
+    animation: confirmSlideIn 0.3s ease;
+}
+
+@keyframes confirmSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.confirm-modal .confirm-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3);
+}
+
+.confirm-modal .confirm-icon .material-icons {
+    font-size: 28px;
+    color: white;
+}
+
+.confirm-modal .confirm-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.confirm-modal .modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 20px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    opacity: 0.6;
+    transition: all 0.2s ease;
+}
+
+.confirm-modal .modal-close:hover {
+    opacity: 1;
+    color: var(--text-primary);
+}
+
+.confirm-modal .confirm-message {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 20px;
+    white-space: pre-line;
+}
+
+.confirm-modal .confirm-options {
+    margin-bottom: 24px;
+}
+
+.confirm-modal .confirm-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.confirm-modal .confirm-checkbox:hover {
+    background: rgba(79, 70, 229, 0.1);
+    border-color: var(--primary-color);
+}
+
+.confirm-modal .confirm-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+}
+
+.confirm-modal .confirm-checkbox span {
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.confirm-modal .confirm-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.confirm-modal .confirm-actions .btn {
+    min-width: 100px;
+    padding: 10px 24px;
+}
+
+/* --- 批量标注按钮样式 --- */
+#batch-defect-auto-annotate-btn.btn-accent {
+    background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+    color: white;
+    border: none;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    transition: all 0.2s ease;
+}
+
+#batch-defect-auto-annotate-btn.btn-accent:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+#batch-defect-auto-annotate-btn.btn-accent .material-icons {
+    font-size: 18px;
+}
+
+#batch-defect-auto-annotate-btn.btn-accent .btn-text {
+    font-weight: 500;
+}
+
+/* --- 明亮模式调整 --- */
+[data-theme="light"] #batch-defect-auto-annotate-btn.btn-accent {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+}
+
+[data-theme="light"] #batch-defect-auto-annotate-btn.btn-accent:hover {
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+}
+
+[data-theme="light"] .confirm-modal .confirm-icon {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.25);
+}
+
+[data-theme="light"] .confirm-modal .confirm-checkbox {
+    background: rgba(79, 70, 229, 0.05);
+    border-color: rgba(79, 70, 229, 0.2);
+}
+
+[data-theme="light"] .confirm-modal .confirm-checkbox:hover {
+    background: rgba(79, 70, 229, 0.1);
+    border-color: var(--primary-color);
+}
+
+/* --- 缩放指示器 --- */
+.zoom-indicator {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    backdrop-filter: blur(10px);
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* --- 平移按钮激活状态 --- */
+#pan-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
 }
 
 /* --- 缩略图工具栏 --- */

@@ -55,5 +55,5 @@ def get_data_dir():
     if getattr(sys, 'frozen', False):
         # PyInstaller 打包后，使用 EXE 所在目录
         return os.path.dirname(sys.executable)
-    # 开发环境，使用 app 模块所在目录
-    return os.path.dirname(os.path.abspath(__file__))
+    # 开发环境，使用 app 模块所在目录 (utils 的父目录)
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -16,6 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
         testCases: [],
         fabricCanvas: null,
         isDrawingMode: false,
+        isPanningMode: false,  // 平移模式
+        isContinuousDrawMode: true,  // 连续绘制模式（默认开启）
+        canvasZoom: 1,  // 画布缩放比例
+        canvasPan: { x: 0, y: 0 },  // 画布平移偏移
+        lastPanPoint: null,  // 上次平移的点
+        clipboardBox: null,  // 复制的单个标注框
+        clipboardBoxes: null,  // 复制的多个标注框（用于跨图片复制）
         history: [],
         pollingInterval: null,
         galleryPage: 1,
@@ -64,6 +71,93 @@ document.addEventListener('DOMContentLoaded', () => {
             } finally {
                 this.hide();
             }
+        }
+    };
+
+    // --- 自定义确认弹框 ---
+    const ConfirmDialog = {
+        modal: null,
+        resolvePromise: null,
+
+        init() {
+            this.modal = document.getElementById('confirm-modal');
+            if (!this.modal) return;
+
+            document.getElementById('confirm-cancel').onclick = () => this.close(false);
+            document.getElementById('confirm-ok').onclick = () => this.close(true);
+            this.modal.querySelector('.modal-close')?.addEventListener('click', () => this.close(false));
+        },
+
+        show(options) {
+            return new Promise((resolve) => {
+                this.resolvePromise = resolve;
+
+                const {
+                    title = '确认操作',
+                    message = '',
+                    icon = 'help_outline',
+                    checkboxLabel = '',
+                    checkboxChecked = false
+                } = options;
+
+                document.getElementById('confirm-title').textContent = title;
+                document.getElementById('confirm-message').textContent = message;
+                document.getElementById('confirm-icon').innerHTML = `<span class="material-icons">${icon}</span>`;
+
+                const checkboxContainer = document.getElementById('confirm-options');
+                const checkbox = document.getElementById('confirm-checkbox');
+                const checkboxLabelEl = document.getElementById('confirm-checkbox-label');
+
+                if (checkboxLabel) {
+                    checkboxContainer.style.display = 'block';
+                    checkbox.checked = checkboxChecked;
+                    checkboxLabelEl.textContent = checkboxLabel;
+                } else {
+                    checkboxContainer.style.display = 'none';
+                }
+
+                this.modal.style.display = 'block';
+                document.getElementById('modal-backdrop').style.display = 'block';
+            });
+        },
+
+        close(result) {
+            if (!this.modal) return;
+
+            const checkbox = document.getElementById('confirm-checkbox');
+            const checkboxContainer = document.getElementById('confirm-options');
+
+            const checkboxValue = checkboxContainer.style.display !== 'none' ? checkbox.checked : null;
+
+            this.modal.style.display = 'none';
+            document.getElementById('modal-backdrop').style.display = 'none';
+
+            if (this.resolvePromise) {
+                this.resolvePromise({ confirmed: result, checkboxValue });
+                this.resolvePromise = null;
+            }
+        },
+
+        // 快捷方法：带复选框的确认
+        async askWithCheckbox(message, checkboxLabel, checkboxChecked = true) {
+            const result = await this.show({
+                title: '确认操作',
+                message,
+                icon: 'help_outline',
+                checkboxLabel,
+                checkboxChecked
+            });
+            return result;
+        },
+
+        // 快捷方法：简单确认
+        async ask(message, title = '确认操作') {
+            const result = await this.show({
+                title,
+                message,
+                icon: 'help_outline'
+            });
+            return result.confirmed;
         }
     };
 
@@ -230,6 +324,9 @@ document.addEventListener('DOMContentLoaded', () => {
         batchDeleteBtn: document.getElementById('batch-delete-btn'),
         batchSetPositiveBtn: document.getElementById('batch-set-positive-btn'),
         batchSetNegativeBtn: document.getElementById('batch-set-negative-btn'),
+        batchAutoAnnotateBtn: document.getElementById('batch-auto-annotate-btn'),
+        batchDefectAutoAnnotateBtn: document.getElementById('batch-defect-auto-annotate-btn'),
+        batchDefectAnnotateModal: document.getElementById('batch-defect-annotate-modal'),
         shortcutToggle: document.getElementById('shortcut-toggle'),
         shortcutsPanel: document.getElementById('shortcuts-panel'),
         boxLabelEditor: document.getElementById('box-label-editor'),
@@ -514,6 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- App 主逻辑 ---
     const App = {
         init() {
+            ConfirmDialog.init();
             this.initTheme();
             this.initCanvas();
             this.bindEventListeners();
@@ -723,7 +821,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 检查是否有未保存的修改
             if (state.hasUnsavedChanges && !force) {
-                if (!confirm('当前有未保存的修改，切换后将丢失。确定要切换吗？')) {
+                const confirmed = await ConfirmDialog.ask('当前有未保存的修改，切换后将丢失。确定要切换吗？');
+                if (!confirmed) {
                     return;
                 }
             }
@@ -747,7 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.clearCanvas(); // 切换缺陷时，清空画布
         },
 
-        selectVersion(versionId, force = false) {
+        async selectVersion(versionId, force = false) {
             if (!versionId) {
                 this.clearEditor();
                 return;
@@ -755,7 +854,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 检查是否有未保存的修改
             if (state.hasUnsavedChanges && !force) {
-                if (!confirm('当前有未保存的修改，切换后将丢失。确定要切换吗？')) {
+                const confirmed = await ConfirmDialog.ask('当前有未保存的修改，切换后将丢失。确定要切换吗？');
+                if (!confirmed) {
                     dom.versionDropdown.value = state.currentVersionId;
                     return;
                 }
@@ -839,6 +939,7 @@ document.addEventListener('DOMContentLoaded', () => {
                          title="${tc.filename}">
                         <div class="checkbox-overlay" data-id="${tc.id}"></div>
                         <img src="/${tc.preview_url}" alt="Test Case ${tc.id}">
+                        <button class="auto-annotate-btn" data-id="${tc.id}" title="单图自动标注">✨</button>
                         <span class="sample-badge ${tc.is_positive === false ? 'negative' : 'positive'}">${tc.is_positive === false ? '✗ 反例' : '✓ 正例'}</span>
                         <button class="delete-test-case-btn" data-id="${tc.id}" title="删除此测试用例">&times;</button>
                     </div>
@@ -872,9 +973,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const positive = state.testCases.filter(tc => tc.is_positive !== false).length;
             const negative = state.testCases.filter(tc => tc.is_positive === false).length;
 
+            // 统计已标注的测试用例（有标注框的）
+            const annotated = state.testCases.filter(tc => tc.bounding_boxes && tc.bounding_boxes.length > 0).length;
+
             document.getElementById('stat-total').textContent = total;
             document.getElementById('stat-positive').textContent = positive;
             document.getElementById('stat-negative').textContent = negative;
+
+            // 更新标注进度
+            const statAnnotated = document.getElementById('stat-annotated');
+            const statTotalCount = document.getElementById('stat-total-count');
+            if (statAnnotated && statTotalCount) {
+                statAnnotated.textContent = annotated;
+                statTotalCount.textContent = total;
+            }
         },
 
         // 更新全选状态
@@ -1047,7 +1159,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // 鼠标按下 - 开始绘制
             state.fabricCanvas.on('mouse:down', (e) => {
-                if (!state.isDrawingMode || !state.currentImage.element) return;
+                // 平移模式和绘制模式互斥
+                if (!state.isDrawingMode || state.isPanningMode || !state.currentImage.element) return;
                 
                 isDrawingRect = true;
                 const pointer = state.fabricCanvas.getPointer(e.e);
@@ -1172,6 +1285,123 @@ document.addEventListener('DOMContentLoaded', () => {
                     dom.updateAnnotationBtn.style.display = 'block';
                 }
             });
+
+            // --- 画布缩放功能（鼠标滚轮）---
+            wrapper.addEventListener('wheel', (e) => {
+                if (!state.currentImage.element) return;
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;  // 缩放因子
+                const newZoom = Math.max(0.5, Math.min(5, state.canvasZoom * delta));
+                state.canvasZoom = newZoom;
+
+                this.applyCanvasTransform();
+            }, { passive: false });
+
+            // --- 画布平移功能（中键或空格+左键）---
+            wrapper.addEventListener('mousedown', (e) => {
+                // 中键平移 或 空格+左键平移
+                if (e.button === 1 || (e.button === 0 && state.isPanningMode)) {
+                    e.preventDefault();
+                    state.lastPanPoint = { x: e.clientX, y: e.clientY };
+                    wrapper.style.cursor = 'grabbing';
+                }
+            });
+
+            wrapper.addEventListener('mousemove', (e) => {
+                if (!state.lastPanPoint) return;
+
+                const dx = e.clientX - state.lastPanPoint.x;
+                const dy = e.clientY - state.lastPanPoint.y;
+
+                state.canvasPan.x += dx;
+                state.canvasPan.y += dy;
+
+                state.lastPanPoint = { x: e.clientX, y: e.clientY };
+                this.applyCanvasTransform();
+            });
+
+            wrapper.addEventListener('mouseup', (e) => {
+                if (state.lastPanPoint) {
+                    state.lastPanPoint = null;
+                    wrapper.style.cursor = state.isPanningMode ? 'grab' : 'default';
+                }
+            });
+
+            wrapper.addEventListener('mouseleave', (e) => {
+                if (state.lastPanPoint) {
+                    state.lastPanPoint = null;
+                    wrapper.style.cursor = 'default';
+                }
+            });
+        },
+
+        // 应用画布缩放和平移变换
+        applyCanvasTransform() {
+            const canvas = state.fabricCanvas;
+            const img = state.currentImage.element;
+            if (!canvas || !img) return;
+
+            // 计算图片在画布中的居中位置
+            const wrapper = dom.canvasWrapper;
+            const imgWidth = img.width * img.scaleX;
+            const imgHeight = img.height * img.scaleY;
+
+            // 应用缩放和平移
+            img.scaleX = img.scaleX / img.scaleX * img.width * state.canvasZoom;
+            img.scaleY = img.scaleY / img.scaleY * img.height * state.canvasZoom;
+
+            // 重置缩放基准
+            const baseScale = Math.min(wrapper.clientWidth / img.width, wrapper.clientHeight / img.height);
+            img.scaleX = baseScale * state.canvasZoom;
+            img.scaleY = baseScale * state.canvasZoom;
+
+            // 居中位置 + 平移偏移
+            img.left = (wrapper.clientWidth - img.width * img.scaleX) / 2 + state.canvasPan.x;
+            img.top = (wrapper.clientHeight - img.height * img.scaleY) / 2 + state.canvasPan.y;
+
+            canvas.renderAll();
+
+            // 更新缩放指示器
+            this.updateZoomIndicator();
+        },
+
+        // 重置画布视图
+        resetCanvasView() {
+            state.canvasZoom = 1;
+            state.canvasPan = { x: 0, y: 0 };
+            this.applyCanvasTransform();
+        },
+
+        // 更新缩放指示器
+        updateZoomIndicator() {
+            const indicator = document.getElementById('zoom-indicator');
+            if (indicator) {
+                indicator.textContent = `${Math.round(state.canvasZoom * 100)}%`;
+            }
+        },
+
+        // 切换平移模式
+        togglePanMode() {
+            state.isPanningMode = !state.isPanningMode;
+            dom.canvasWrapper.style.cursor = state.isPanningMode ? 'grab' : 'default';
+
+            // 更新按钮状态
+            const panBtn = document.getElementById('pan-btn');
+            if (panBtn) {
+                panBtn.classList.toggle('active', state.isPanningMode);
+            }
+
+            // 平移模式和绘制模式互斥
+            if (state.isPanningMode && state.isDrawingMode) {
+                this.stopDrawingMode();
+            }
+
+            if (state.isPanningMode) {
+                Notification.info('按住左键拖拽平移画布，滚轮缩放', '平移模式', 3000);
+            }
         },
 
         async loadImageOnCanvas(src) {
@@ -1203,26 +1433,36 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         },
 
-        clearCanvas() {
-            const hasContent = state.fabricCanvas.getObjects().length > 0 || state.currentImage.file;
-            if (hasContent && !confirm('确定要清空画布吗？未保存的标注将丢失。')) return;
-            
-            state.fabricCanvas.clear();
-            state.fabricCanvas.setBackgroundImage(null, state.fabricCanvas.renderAll.bind(state.fabricCanvas));
+        clearCanvas(skipConfirm = false) {
+            return new Promise(async (resolve) => {
+                const hasContent = state.fabricCanvas.getObjects().length > 0 || state.currentImage.file;
+                if (hasContent && !skipConfirm) {
+                    const confirmed = await ConfirmDialog.ask('确定要清空画布吗？未保存的标注将丢失。', '清空画布');
+                    if (!confirmed) {
+                        resolve(false);
+                        return;
+                    }
+                }
 
-            dom.uploadPlaceholder.style.display = 'flex';
-            dom.canvasWrapper.classList.remove('has-image');
+                state.fabricCanvas.clear();
+                state.fabricCanvas.setBackgroundImage(null, state.fabricCanvas.renderAll.bind(state.fabricCanvas));
 
-            state.currentImage.file = null;
-            state.currentImage.element = null;
-            state.currentTestCaseId = null;
+                dom.uploadPlaceholder.style.display = 'flex';
+                dom.canvasWrapper.classList.remove('has-image');
 
-            document.querySelectorAll('.test-case-item img').forEach(img => {
-                img.classList.remove('selected');
-            });
-            
-            document.querySelectorAll('.thumbnail-item').forEach(item => {
-                item.classList.remove('selected');
+                state.currentImage.file = null;
+                state.currentImage.element = null;
+                state.currentTestCaseId = null;
+
+                document.querySelectorAll('.test-case-item img').forEach(img => {
+                    img.classList.remove('selected');
+                });
+
+                document.querySelectorAll('.thumbnail-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+
+                resolve(true);
             });
         },
 
@@ -1230,6 +1470,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!state.currentImage.element) {
                 Notification.warning('请先上传一张图片！', '提示');
                 return;
+            }
+            // 平移模式和绘制模式互斥
+            if (state.isPanningMode) {
+                state.isPanningMode = false;
+                const panBtn = document.getElementById('pan-btn');
+                if (panBtn) panBtn.classList.remove('active');
             }
             state.isDrawingMode = true;
             // 禁用画布上所有对象的选择，避免干扰绘制
@@ -1289,10 +1535,58 @@ document.addEventListener('DOMContentLoaded', () => {
             return boxes;
         },
 
+        // 将归一化的标注框粘贴到当前图片
+        async pasteBoxesToCurrentImage(boxes) {
+            const img = state.currentImage.element;
+            if (!img || !boxes || boxes.length === 0) return;
+
+            const imgLeft = img.left;
+            const imgTop = img.top;
+            const imgWidth = img.width * img.scaleX;
+            const imgHeight = img.height * img.scaleY;
+
+            // 清除现有标注框
+            state.fabricCanvas.getObjects('rect').forEach(rect => {
+                state.fabricCanvas.remove(rect);
+            });
+
+            // 添加新的标注框
+            for (const box of boxes) {
+                const [x_min, y_min, x_max, y_max] = box;
+                const left = imgLeft + (x_min / 1000) * imgWidth;
+                const top = imgTop + (y_min / 1000) * imgHeight;
+                const width = ((x_max - x_min) / 1000) * imgWidth;
+                const height = ((y_max - y_min) / 1000) * imgHeight;
+
+                const rect = new fabric.Rect({
+                    left: left,
+                    top: top,
+                    width: width,
+                    height: height,
+                    fill: 'rgba(234, 67, 53, 0.2)',
+                    stroke: '#ea4335',
+                    strokeWidth: 2,
+                    selectable: true,
+                    evented: true,
+                    hasControls: true,
+                    hasBorders: true,
+                });
+                state.fabricCanvas.add(rect);
+            }
+
+            state.fabricCanvas.renderAll();
+            Notification.success(`已粘贴 ${boxes.length} 个标注框`, '粘贴成功', 2000);
+
+            // 自动保存
+            if (state.currentTestCaseId) {
+                await this.autoSaveAnnotation();
+            }
+        },
+
         // --- 事件绑定 ---
         bindEventListeners() {
             // 键盘快捷键
-            document.addEventListener('keydown', (e) => {
+            document.addEventListener('keydown', async (e) => {
                 // Ctrl/Cmd + S: 保存当前版本
                 if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                     e.preventDefault();
@@ -1317,11 +1611,89 @@ document.addEventListener('DOMContentLoaded', () => {
                         Notification.success('标注框已删除', '删除成功', 2000);
                     }
                 }
-                // ESC: 关闭模态框或退出绘制模式
+                // 空格: 切换平移模式
+                if (e.code === 'Space' && !e.ctrlKey && !e.metaKey) {
+                    if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                        e.preventDefault();
+                        this.togglePanMode();
+                    }
+                }
+                // Ctrl/Cmd + 0: 重置视图
+                if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+                    e.preventDefault();
+                    this.resetCanvasView();
+                    Notification.success('视图已重置', '重置成功', 2000);
+                }
+                // Ctrl/Cmd + C: 复制选中框
+                if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+                    const activeObject = state.fabricCanvas.getActiveObject();
+                    if (activeObject && activeObject.type === 'rect') {
+                        state.clipboardBox = {
+                            left: activeObject.left,
+                            top: activeObject.top,
+                            width: activeObject.width,
+                            height: activeObject.height
+                        };
+                        Notification.success('标注框已复制', '复制成功', 2000);
+                    }
+                }
+                // Ctrl/Cmd + V: 粘贴标注框
+                if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+                    if (state.clipboardBox) {
+                        const newRect = new fabric.Rect({
+                            left: state.clipboardBox.left + 20,
+                            top: state.clipboardBox.top + 20,
+                            width: state.clipboardBox.width,
+                            height: state.clipboardBox.height,
+                            fill: 'rgba(234, 67, 53, 0.2)',
+                            stroke: '#ea4335',
+                            strokeWidth: 2,
+                            selectable: true,
+                            evented: true,
+                            hasControls: true,
+                            hasBorders: true,
+                        });
+                        state.fabricCanvas.add(newRect);
+                        state.fabricCanvas.setActiveObject(newRect);
+                        Notification.success('标注框已粘贴', '粘贴成功', 2000);
+
+                        // 自动保存
+                        if (state.currentTestCaseId) {
+                            this.autoSaveAnnotation();
+                        }
+                    }
+                }
+                // Ctrl/Cmd + Shift + V: 复制当前所有标注框到下一张
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'V') {
+                    e.preventDefault();
+                    // 获取当前所有标注框
+                    const currentBoxes = this.getNormalizedBoxes();
+                    if (currentBoxes.length === 0) {
+                        Notification.warning('当前没有标注框可复制', '提示');
+                        return;
+                    }
+                    // 保存到剪贴板
+                    state.clipboardBoxes = currentBoxes;
+                    // 切换到下一张并自动粘贴
+                    const currentIndex = state.testCases.findIndex(tc => tc.id == state.currentTestCaseId);
+                    if (currentIndex < state.testCases.length - 1) {
+                        Notification.info(`已复制 ${currentBoxes.length} 个标注框，正在切换到下一张...`, '复制标注', 2000);
+                        await this.nextTestCase();
+                        // 延迟粘贴，等待画布加载
+                        setTimeout(() => {
+                            this.pasteBoxesToCurrentImage(state.clipboardBoxes);
+                        }, 500);
+                    } else {
+                        Notification.warning('已经是最后一张图片了', '提示');
+                    }
+                }
+                // ESC: 关闭模态框或退出绘制模式或退出平移模式
                 if (e.key === 'Escape') {
                     // 优先关闭模态框
                     if (dom.modalBackdrop.style.display === 'block') {
                         this.hideModals();
+                    } else if (state.isPanningMode) {
+                        this.togglePanMode();
                     } else if (state.isDrawingMode) {
                         this.stopDrawingMode();
                     }
@@ -1454,7 +1826,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 dom.updateAnnotationBtn.onclick = () => this.updateAnnotation();
             }
             dom.clearCanvasBtn.onclick = () => this.clearCanvas();
-            
+
+            // 新增按钮事件
+            const panBtn = document.getElementById('pan-btn');
+            if (panBtn) {
+                panBtn.onclick = () => this.togglePanMode();
+            }
+
+            const resetViewBtn = document.getElementById('reset-view-btn');
+            if (resetViewBtn) {
+                resetViewBtn.onclick = () => this.resetCanvasView();
+            }
+
             // 旧的 testCaseList 点击事件
             if (dom.testCaseList) {
                 dom.testCaseList.addEventListener('click', (e) => {
@@ -1476,9 +1859,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         this.toggleThumbnailSelection(parseInt(target.dataset.id), e.ctrlKey || e.metaKey);
                         return;
                     }
+                    // 点击自动标注按钮
+                    if (target.classList.contains('auto-annotate-btn')) {
+                        e.stopPropagation();
+                        this.startSingleAutoAnnotate(parseInt(target.dataset.id));
+                        return;
+                    }
                     // 点击缩略图
                     const thumbnailItem = target.closest('.thumbnail-item');
-                    if (thumbnailItem && !target.classList.contains('delete-test-case-btn')) {
+                    if (thumbnailItem && !target.classList.contains('delete-test-case-btn') && !target.classList.contains('auto-annotate-btn')) {
                         // Ctrl+点击进行多选
                         if (e.ctrlKey || e.metaKey) {
                             this.toggleThumbnailSelection(parseInt(thumbnailItem.dataset.id), true);
@@ -1584,6 +1973,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 dom.batchSetNegativeBtn.onclick = () => this.batchSetSampleType(false);
             }
 
+            // 自动标注按钮
+            if (dom.batchAutoAnnotateBtn) {
+                dom.batchAutoAnnotateBtn.onclick = () => this.startAutoAnnotate();
+            }
+
+            // 批量缺陷自动标注按钮
+            if (dom.batchDefectAutoAnnotateBtn) {
+                dom.batchDefectAutoAnnotateBtn.onclick = () => this.showBatchDefectAnnotateModal();
+            }
+
             // 批量导入按钮
             if (dom.batchImportBtn) {
                 dom.batchImportBtn.onclick = () => this.showBatchImportModal();
@@ -1630,7 +2029,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (!confirm(`确定要删除选中的 ${state.batchSelectedIds.length} 个测试用例吗？此操作不可撤销。`)) {
+            const confirmed = await ConfirmDialog.ask(`确定要删除选中的 ${state.batchSelectedIds.length} 个测试用例吗？此操作不可撤销。`, '删除确认');
+            if (!confirmed) {
                 return;
             }
 
@@ -1695,6 +2095,326 @@ document.addEventListener('DOMContentLoaded', () => {
             if (successCount > 0) {
                 Notification.success(`成功将 ${successCount} 个测试用例设为${isPositive ? '正例' : '反例'}`, '修改完成');
                 this.renderTestCases();
+            }
+        },
+
+        // --- 自动标注相关方法 ---
+        async startAutoAnnotate() {
+            if (!state.currentDefectId) {
+                Notification.warning('请先选择一个缺陷类别', '提示');
+                return;
+            }
+
+            if (state.batchSelectedIds.length === 0) {
+                Notification.warning('请先选择要标注的测试用例', '提示');
+                return;
+            }
+
+            const result = await ConfirmDialog.askWithCheckbox(
+                `将对选中的 ${state.batchSelectedIds.length} 个测试用例进行自动标注。`,
+                '清除现有标注框',
+                true
+            );
+
+            if (!result.confirmed) return;
+
+            const clearExisting = result.checkboxValue;
+
+            Loading.show('正在启动自动标注任务...');
+
+            try {
+                const result = await api.post(`/api/auto_annotate/defect/${state.currentDefectId}`, {
+                    clear_existing_boxes: clearExisting,
+                    test_case_ids: state.batchSelectedIds
+                });
+
+                Loading.hide();
+
+                if (result.success) {
+                    Notification.success(`自动标注任务已启动，共 ${result.total_images} 张图片`, '任务创建成功');
+                    this.pollAutoAnnotateStatus(result.task_id);
+                } else {
+                    Notification.error(result.error || '启动失败', '自动标注失败');
+                }
+            } catch (error) {
+                Loading.hide();
+                Notification.error(`启动失败: ${error.message}`, '自动标注失败');
+            }
+        },
+
+        // 单图自动标注
+        async startSingleAutoAnnotate(testCaseId) {
+            if (!state.currentDefectId) {
+                Notification.warning('请先选择一个缺陷类别', '提示');
+                return;
+            }
+
+            const testCase = state.testCases.find(tc => tc.id === testCaseId);
+            const testCaseName = testCase ? testCase.filename : `ID: ${testCaseId}`;
+
+            const result = await ConfirmDialog.askWithCheckbox(
+                `对「${testCaseName}」进行自动标注？`,
+                '清除现有标注框',
+                true
+            );
+
+            if (!result.confirmed) return;
+
+            const clearExisting = result.checkboxValue;
+
+            // 设置按钮为加载状态
+            const btn = document.querySelector(`.auto-annotate-btn[data-id="${testCaseId}"]`);
+            if (btn) {
+                btn.classList.add('loading');
+                btn.disabled = true;
+            }
+
+            Loading.show(`正在自动标注「${testCaseName}」...`);
+
+            try {
+                const result = await api.post(`/api/auto_annotate/defect/${state.currentDefectId}`, {
+                    clear_existing_boxes: clearExisting,
+                    test_case_ids: [testCaseId]
+                });
+
+                Loading.hide();
+
+                if (result.success) {
+                    Notification.success(`自动标注任务已启动`, '任务创建成功');
+                    this.pollAutoAnnotateStatus(result.task_id);
+                } else {
+                    Notification.error(result.error || '启动失败', '自动标注失败');
+                    if (btn) {
+                        btn.classList.remove('loading');
+                        btn.disabled = false;
+                    }
+                }
+            } catch (error) {
+                Loading.hide();
+                Notification.error(`启动失败: ${error.message}`, '自动标注失败');
+                if (btn) {
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                }
+            }
+        },
+
+        async pollAutoAnnotateStatus(taskId) {
+            const pollInterval = 2000; // 2秒轮询一次
+            const maxAttempts = 150; // 最多轮询150次（5分钟）
+            let attempts = 0;
+
+            const poll = async () => {
+                attempts++;
+                try {
+                    const status = await api.get(`/api/auto_annotate/task/${taskId}`);
+
+                    if (status.status === 'completed') {
+                        Notification.success(
+                            `自动标注完成！共生成 ${status.total_boxes_created} 个标注框`,
+                            '任务完成'
+                        );
+                        // 刷新测试用例列表以显示新的标注框
+                        const data = await api.get(`/api/defect/${state.currentDefectId}`);
+                        state.testCases = data.test_cases;
+                        this.renderTestCases();
+                        return;
+                    }
+
+                    if (status.status === 'failed') {
+                        Notification.error(status.error_message || '处理失败', '自动标注失败');
+                        return;
+                    }
+
+                    // 任务仍在进行中
+                    if (attempts < maxAttempts) {
+                        Loading.show(`自动标注中... (${status.processed_images}/${status.total_images})`);
+                        setTimeout(poll, pollInterval);
+                    } else {
+                        Loading.hide();
+                        Notification.warning('任务超时，请稍后刷新查看结果', '超时');
+                    }
+                } catch (error) {
+                    console.error('轮询状态失败:', error);
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, pollInterval);
+                    } else {
+                        Loading.hide();
+                        Notification.error('无法获取任务状态', '错误');
+                    }
+                }
+            };
+
+            poll();
+        },
+
+        // --- 批量缺陷自动标注 ---
+        showBatchDefectAnnotateModal() {
+            if (!dom.batchDefectAnnotateModal) return;
+
+            // 重置模态框状态
+            document.getElementById('batch-defect-list').innerHTML = '';
+            document.getElementById('batch-defect-error').style.display = 'none';
+            document.getElementById('batch-defect-loading').style.display = 'flex';
+            document.getElementById('batch-defect-execute-btn').disabled = true;
+
+            this.showModals();
+            dom.batchDefectAnnotateModal.style.display = 'block';
+
+            // 初始化事件（只绑定一次）
+            if (!this.batchDefectAnnotateEventsInitialized) {
+                const modal = dom.batchDefectAnnotateModal;
+                modal.querySelector('.modal-close').onclick = () => this.hideBatchDefectAnnotateModal();
+                modal.querySelector('.modal-cancel').onclick = () => this.hideBatchDefectAnnotateModal();
+                document.getElementById('batch-defect-execute-btn').onclick = () => this.executeBatchDefectAnnotate();
+                this.batchDefectAnnotateEventsInitialized = true;
+            }
+
+            // 加载服务缺陷列表
+            this.loadBatchDefectList();
+        },
+
+        hideBatchDefectAnnotateModal() {
+            if (dom.batchDefectAnnotateModal) {
+                dom.batchDefectAnnotateModal.style.display = 'none';
+            }
+            // 隐藏背景遮罩
+            dom.modalBackdrop.style.display = 'none';
+        },
+
+        async loadBatchDefectList() {
+            const loadingEl = document.getElementById('batch-defect-loading');
+            const listEl = document.getElementById('batch-defect-list');
+            const errorEl = document.getElementById('batch-defect-error');
+            const errorMsgEl = document.getElementById('batch-defect-error-msg');
+            const executeBtn = document.getElementById('batch-defect-execute-btn');
+
+            try {
+                // 调用服务测试接口获取缺陷列表
+                const result = await api.post('/api/trueno3_service_test', {});
+
+                loadingEl.style.display = 'none';
+
+                if (!result.success) {
+                    errorEl.style.display = 'flex';
+                    errorMsgEl.textContent = result.error || '无法连接到自动标注服务';
+                    return;
+                }
+
+                const functions = result.functions || [];
+                const matchedDefects = result.matched_defects || [];
+
+                if (functions.length === 0) {
+                    errorEl.style.display = 'flex';
+                    errorMsgEl.textContent = '服务没有可用的缺陷定义';
+                    return;
+                }
+
+                // 创建缺陷名称到中文名的映射
+                const matchedMap = {};
+                matchedDefects.forEach(d => {
+                    matchedMap[d.name] = d.defect_cn;
+                });
+
+                // 渲染缺陷列表
+                listEl.innerHTML = functions.map(f => {
+                    const isMatched = matchedMap[f.funID];
+                    return `
+                        <div class="batch-defect-item ${isMatched ? '' : 'no-match'}" data-name="${f.funID}">
+                            <input type="checkbox" value="${f.funID}" ${isMatched ? 'checked' : ''}>
+                            <div class="defect-info">
+                                <div class="defect-name">${f.funID}</div>
+                                <div class="defect-desc">${f.funDesc || '无描述'}</div>
+                            </div>
+                            <span class="defect-status ${isMatched ? '' : 'no-match'}">
+                                ${isMatched ? '已匹配' : '未匹配'}
+                            </span>
+                        </div>
+                    `;
+                }).join('');
+
+                // 绑定点击事件
+                listEl.querySelectorAll('.batch-defect-item').forEach(item => {
+                    item.onclick = (e) => {
+                        if (e.target.tagName === 'INPUT') return;
+                        const checkbox = item.querySelector('input[type="checkbox"]');
+                        checkbox.checked = !checkbox.checked;
+                        item.classList.toggle('selected', checkbox.checked);
+                        this.updateBatchDefectExecuteBtn();
+                    };
+
+                    item.querySelector('input[type="checkbox"]').onchange = () => {
+                        item.classList.toggle('selected', item.querySelector('input[type="checkbox"]').checked);
+                        this.updateBatchDefectExecuteBtn();
+                    };
+                });
+
+                // 更新执行按钮状态
+                this.updateBatchDefectExecuteBtn();
+
+            } catch (error) {
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'flex';
+                errorMsgEl.textContent = error.message || '加载失败';
+            }
+        },
+
+        updateBatchDefectExecuteBtn() {
+            const checkedItems = document.querySelectorAll('#batch-defect-list input[type="checkbox"]:checked');
+            const executeBtn = document.getElementById('batch-defect-execute-btn');
+            executeBtn.disabled = checkedItems.length === 0;
+        },
+
+        async executeBatchDefectAnnotate() {
+            const checkedItems = document.querySelectorAll('#batch-defect-list input[type="checkbox"]:checked');
+            const defectNames = Array.from(checkedItems).map(item => item.value);
+            const clearExisting = document.getElementById('batch-defect-clear-existing').checked;
+
+            if (defectNames.length === 0) {
+                Notification.warning('请选择要自动标注的缺陷', '提示');
+                return;
+            }
+
+            const confirmed = await ConfirmDialog.ask(
+                `将对 ${defectNames.length} 个缺陷进行自动标注。\n\n` +
+                `已选择的缺陷：${defectNames.join(', ')}\n\n` +
+                `${clearExisting ? '⚠️ 将清除现有标注框' : '保留现有标注框'}`,
+                '批量自动标注确认'
+            );
+
+            if (!confirmed) return;
+
+            Loading.show('正在启动批量自动标注任务...');
+
+            try {
+                const result = await api.post('/api/auto_annotate/batch_defects', {
+                    defect_names: defectNames,
+                    clear_existing_boxes: clearExisting
+                });
+
+                Loading.hide();
+
+                if (result.success) {
+                    Notification.success(result.message, '批量标注已启动');
+                    this.hideBatchDefectAnnotateModal();
+
+                    // 显示任务详情
+                    if (result.tasks && result.tasks.length > 0) {
+                        const taskDetails = result.tasks.map(t =>
+                            `${t.defect_name}: ${t.total_images} 张图片`
+                        ).join('\n');
+                        console.log('创建的任务:', taskDetails);
+                    }
+
+                    if (result.errors && result.errors.length > 0) {
+                        Notification.warning(result.errors.join('\n'), '部分缺陷处理失败');
+                    }
+                } else {
+                    Notification.error(result.error || '启动失败', '批量标注失败');
+                }
+            } catch (error) {
+                Loading.hide();
+                Notification.error(error.message || '请求失败', '批量标注失败');
             }
         },
 
@@ -2083,7 +2803,8 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         async deleteTestCase(testCaseId) {
-            if (!confirm('确定要删除这个测试用例吗？此操作不可撤销。')) return;
+            const confirmed = await ConfirmDialog.ask('确定要删除这个测试用例吗？此操作不可撤销。', '删除确认');
+            if (!confirmed) return;
 
             const result = await api.delete(`/api/testcase/${testCaseId}`);
             if (result.success) {
@@ -2428,6 +3149,7 @@ document.addEventListener('DOMContentLoaded', () => {
             dom.importDefectsModal.style.display = 'none';
             dom.settingsModal.style.display = 'none';
             if (dom.batchImportModal) dom.batchImportModal.style.display = 'none';
+            if (dom.batchDefectAnnotateModal) dom.batchDefectAnnotateModal.style.display = 'none';
         },
 
         async showGlobalTemplateModal() {
@@ -2767,6 +3489,46 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button id="test-trueno3-btn" class="btn-secondary">🧪 测试SSH连接</button>
                             <span id="trueno3-test-result" class="hint"></span>
                         </div>
+
+                        <!-- Trueno3 服务配置 (自动标注) -->
+                        <div class="settings-section-divider">
+                            <h4>🔧 自动标注服务配置</h4>
+                            <p class="hint">配置Trueno3分析服务地址，用于自动标注功能</p>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-item">
+                                <label>服务主机</label>
+                                <input type="text" id="settings-service-host" value="${safeTrueno3Config.service_host || safeTrueno3Config.ssh_host || ''}" placeholder="默认使用SSH主机">
+                            </div>
+                            <div class="form-item">
+                                <label>服务端口</label>
+                                <input type="number" id="settings-service-port" value="${safeTrueno3Config.service_port || 20011}" min="1" max="65535">
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <label>API路径</label>
+                            <input type="text" id="settings-api-path" value="${safeTrueno3Config.api_path || '/picAnalyse'}" placeholder="/picAnalyse">
+                        </div>
+
+                        <!-- 回调配置 -->
+                        <div class="settings-section-divider">
+                            <h4>📥 回调配置</h4>
+                            <p class="hint">本服务的地址，用于接收Trueno3的异步回调结果</p>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-item">
+                                <label>本服务IP</label>
+                                <input type="text" id="settings-callback-host" value="${safeTrueno3Config.callback_host || ''}" placeholder="192.168.1.50">
+                            </div>
+                            <div class="form-item">
+                                <label>本服务端口</label>
+                                <input type="number" id="settings-callback-port" value="${safeTrueno3Config.callback_port || 5001}" min="1" max="65535">
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <button id="test-trueno3-service-btn" class="btn-secondary">🔍 测试服务连通性</button>
+                            <span id="trueno3-service-test-result" class="hint"></span>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -2887,6 +3649,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
+            // 测试 Trueno3 服务连通性
+            document.getElementById('test-trueno3-service-btn').onclick = async () => {
+                const resultSpan = document.getElementById('trueno3-service-test-result');
+                resultSpan.textContent = ' 测试中...';
+                resultSpan.style.color = 'var(--text-secondary)';
+
+                // 获取服务配置
+                let serviceHost = document.getElementById('settings-service-host').value;
+                const servicePort = parseInt(document.getElementById('settings-service-port').value) || 20011;
+
+                // 如果没有填写服务主机，使用SSH主机
+                if (!serviceHost) {
+                    serviceHost = document.getElementById('settings-trueno3-host').value;
+                }
+
+                if (!serviceHost) {
+                    resultSpan.textContent = ' ✗ 请填写服务主机或SSH主机';
+                    resultSpan.style.color = '#ea4335';
+                    return;
+                }
+
+                try {
+                    const result = await api.post('/api/trueno3_service_test', {
+                        service_host: serviceHost,
+                        service_port: servicePort
+                    });
+
+                    if (result.success) {
+                        let message = ` ✓ ${result.message}`;
+                        if (result.matched_defects && result.matched_defects.length > 0) {
+                            message += `，匹配 ${result.matched_defects.length} 个缺陷定义`;
+                        }
+                        resultSpan.textContent = message;
+                        resultSpan.style.color = 'var(--success-color)';
+                    } else {
+                        resultSpan.textContent = ' ✗ ' + result.error;
+                        resultSpan.style.color = '#ea4335';
+                    }
+                } catch (error) {
+                    resultSpan.textContent = ' ✗ 测试失败: ' + error.message;
+                    resultSpan.style.color = '#ea4335';
+                }
+            };
+
             // 测试模型可用性
             document.getElementById('test-model-btn').onclick = async () => {
                 const resultSpan = document.getElementById('model-test-result');
@@ -2960,6 +3766,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     ssh_port: parseInt(document.getElementById('settings-trueno3-port').value),
                     ssh_username: document.getElementById('settings-trueno3-username').value,
                     ssh_password: document.getElementById('settings-trueno3-password').value,
+                    // 服务配置 (用于自动标注)
+                    service_host: document.getElementById('settings-service-host').value,
+                    service_port: parseInt(document.getElementById('settings-service-port').value) || 20011,
+                    api_path: document.getElementById('settings-api-path').value || '/picAnalyse',
+                    // 回调配置
+                    callback_host: document.getElementById('settings-callback-host').value,
+                    callback_port: parseInt(document.getElementById('settings-callback-port').value) || 5001,
                 };
                 await api.post('/api/trueno3_config', trueno3Data);
 
