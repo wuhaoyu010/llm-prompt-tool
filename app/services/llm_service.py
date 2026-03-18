@@ -5,14 +5,100 @@ LLM 服务层
 - 真实 LLM API 调用
 - Mock LLM 模拟调用
 - Prompt 格式化
+- 图片动态缩放（防止超过大模型token限制）
 """
 
 import json
 import base64
 import requests
+import logging
 
 from ..database import db, LLMConfig, GlobalPromptTemplate
 from ..utils.api_url import normalize_api_url
+
+logger = logging.getLogger(__name__)
+
+# cv2 和 numpy 延迟导入，避免启动时版本冲突
+_cv2 = None
+_numpy = None
+
+
+def _get_cv2():
+    """延迟加载 cv2"""
+    global _cv2
+    if _cv2 is None:
+        import cv2
+        _cv2 = cv2
+    return _cv2
+
+
+def _get_numpy():
+    """延迟加载 numpy"""
+    global _numpy
+    if _numpy is None:
+        import numpy as np
+        _numpy = np
+    return _numpy
+
+
+def _resize_image_for_vlm(image):
+    """
+    将大图压缩到宽或高为28的倍数（最接近的尺寸），保持纵横比
+    触发条件: 宽 > 1920 或 高 > 1920
+
+    参数:
+        image: numpy数组格式的图片 (H, W, C) 或 (H, W)
+
+    返回:
+        tuple: (resized_img, scale)
+            - resized_img: 缩放后的图片
+            - scale: 如果未缩放返回 1.0，否则返回 (scale_w, scale_h) 元组
+    """
+    cv2 = _get_cv2()
+
+    h, w = image.shape[:2]
+
+    # 判断是否需要缩放：长边超过1920才触发
+    max_side = max(w, h)
+    if max_side <= 1920:
+        return image, 1.0
+
+    # 计算缩放比例：以长边为基准，缩放到最接近的28倍数
+    # 28 * 68 = 1904（小于1920的最大28倍数）
+    target_max = 1904  # 28 * 68
+
+    scale = target_max / max_side
+
+    # 计算新的宽高（保持纵横比）
+    new_w = int(w * scale)
+    new_h = int(h * scale)
+
+    # 调整为28的倍数（四舍五入）
+    target_w = round(new_w / 28) * 28
+    target_h = round(new_h / 28) * 28
+
+    # 防止调整后超过限制
+    target_w = min(target_w, 1904)
+    target_h = min(target_h, 1904)
+
+    # 确保尺寸至少为28
+    target_w = max(target_w, 28)
+    target_h = max(target_h, 28)
+
+    resized_img = cv2.resize(
+        image, (target_w, target_h), interpolation=cv2.INTER_AREA
+    )
+
+    # 计算实际缩放因子（用于坐标映射）
+    scale_w = target_w / w
+    scale_h = target_h / h
+
+    logger.info(
+        f"Image resized: {w}x{h} -> {target_w}x{target_h} "
+        f"(scale_w={scale_w:.4f}, scale_h={scale_h:.4f})"
+    )
+
+    return resized_img, (scale_w, scale_h)
 
 
 def format_prompt(defect_version, boxes_str):
@@ -49,6 +135,8 @@ def run_real_llm(model_name, formatted_prompt, image_path, boxes_count):
     返回:
         验证结果列表
     """
+    cv2 = _get_cv2()  # 延迟加载，避免启动时版本冲突
+
     # 从数据库获取LLM配置
     config = LLMConfig.query.first()
     if not config or not config.api_key:
@@ -72,8 +160,20 @@ def run_real_llm(model_name, formatted_prompt, image_path, boxes_count):
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
 
     try:
-        with open(image_path, "rb") as image_file:
-            image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+        # 使用 OpenCV 读取图片以支持动态缩放
+        image = cv2.imread(image_path)
+        if image is None:
+            raise ValueError(f"无法读取图片: {image_path}")
+
+        # 动态缩放大图，防止超过大模型token限制
+        resized_image, scale_info = _resize_image_for_vlm(image)
+
+        # 编码为 JPEG 并转为 base64
+        success, buffer = cv2.imencode('.jpg', resized_image, [cv2.IMWRITE_JPEG_QUALITY, 95])
+        if not success:
+            raise ValueError("图片编码失败")
+        image_base64 = base64.b64encode(buffer).decode('utf-8')
+
     except Exception as e:
         return [{
             "box_id": i,
