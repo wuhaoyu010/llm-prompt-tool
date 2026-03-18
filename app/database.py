@@ -34,10 +34,22 @@ class Trueno3Config(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     enabled = db.Column(db.Boolean, default=False)  # 是否启用自动同步
     code_path = db.Column(db.String(500), nullable=False, default='/home/user/trueno3/src/algorithm/vlm_qwen3_server')
+
+    # SSH 配置 (用于同步缺陷定义)
     ssh_host = db.Column(db.String(100), nullable=False, default='')
     ssh_port = db.Column(db.Integer, nullable=False, default=22)
     ssh_username = db.Column(db.String(100), nullable=False, default='')
     ssh_password = db.Column(db.String(100), nullable=False, default='')  # 生产环境应使用密钥
+
+    # 服务配置 (用于自动标注 API 调用)
+    service_host = db.Column(db.String(100), nullable=False, default='')  # 默认取 ssh_host
+    service_port = db.Column(db.Integer, nullable=False, default=20011)
+    api_path = db.Column(db.String(100), nullable=False, default='/picAnalyse')
+
+    # 本服务配置 (用于接收回调)
+    callback_host = db.Column(db.String(100), nullable=False, default='')  # 本服务 IP
+    callback_port = db.Column(db.Integer, nullable=False, default=5001)   # 本服务端口
+
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
@@ -50,6 +62,11 @@ class Trueno3Config(db.Model):
             'ssh_port': self.ssh_port,
             'ssh_username': self.ssh_username,
             'ssh_password': self.ssh_password,
+            'service_host': self.service_host or self.ssh_host,  # 默认使用 SSH 主机
+            'service_port': self.service_port,
+            'api_path': self.api_path,
+            'callback_host': self.callback_host,
+            'callback_port': self.callback_port,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
@@ -177,6 +194,74 @@ class TestResult(db.Model):
             "test_case_id": self.test_case_id,
             "result_json": self.result_json,
             "created_at": self.created_at.isoformat()
+        }
+
+
+class AutoAnnotationTask(db.Model):
+    """自动标注任务"""
+    id = db.Column(db.Integer, primary_key=True)
+    request_id = db.Column(db.String(100), unique=True, nullable=False)  # UUID
+    defect_id = db.Column(db.Integer, db.ForeignKey('defect.id'), nullable=False)
+
+    # 任务状态: pending(等待中), processing(处理中), completed(完成), failed(失败)
+    status = db.Column(db.String(20), nullable=False, default='pending')
+    total_images = db.Column(db.Integer, default=0)
+    processed_images = db.Column(db.Integer, default=0)
+
+    # 结果摘要
+    total_boxes_created = db.Column(db.Integer, default=0)
+    error_message = db.Column(db.Text)
+
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    completed_at = db.Column(db.DateTime)
+
+    # 关联
+    items = db.relationship('AutoAnnotationItem', backref='task', lazy=True, cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "request_id": self.request_id,
+            "defect_id": self.defect_id,
+            "status": self.status,
+            "total_images": self.total_images,
+            "processed_images": self.processed_images,
+            "total_boxes_created": self.total_boxes_created,
+            "error_message": self.error_message,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None
+        }
+
+
+class AutoAnnotationItem(db.Model):
+    """自动标注子任务 (每张图片)"""
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(db.Integer, db.ForeignKey('auto_annotation_task.id'), nullable=False)
+    test_case_id = db.Column(db.Integer, db.ForeignKey('test_case.id'), nullable=False)
+    object_id = db.Column(db.String(100), nullable=False)  # 对应 API 的 objectId
+
+    # 状态: pending(等待中), completed(完成), failed(失败)
+    status = db.Column(db.String(20), nullable=False, default='pending')
+    boxes_created = db.Column(db.Integer, default=0)
+    error_message = db.Column(db.Text)
+
+    # 原始回调数据 (用于调试)
+    callback_data = db.Column(db.Text)
+
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    completed_at = db.Column(db.DateTime)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "task_id": self.task_id,
+            "test_case_id": self.test_case_id,
+            "object_id": self.object_id,
+            "status": self.status,
+            "boxes_created": self.boxes_created,
+            "error_message": self.error_message,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None
         }
 
 def init_db(app: Flask):

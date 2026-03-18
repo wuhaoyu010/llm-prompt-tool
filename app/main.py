@@ -21,6 +21,7 @@ from .routes.defect_routes import defect_bp
 from .routes.testcase_routes import testcase_bp
 from .routes.model_routes import model_bp
 from .routes.task_routes import task_bp
+from .routes.annotate_routes import annotate_bp
 
 
 def create_app():
@@ -57,6 +58,7 @@ def create_app():
     app.register_blueprint(testcase_bp)
     app.register_blueprint(model_bp)
     app.register_blueprint(task_bp)
+    app.register_blueprint(annotate_bp)
 
     return app
 
@@ -79,7 +81,12 @@ def _init_default_data():
             ssh_host='',
             ssh_port=22,
             ssh_username='',
-            ssh_password=''
+            ssh_password='',
+            service_host='',
+            service_port=20011,
+            api_path='/picAnalyse',
+            callback_host='',
+            callback_port=5001
         ))
 
     if not GlobalPromptTemplate.query.first():
