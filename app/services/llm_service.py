@@ -18,13 +18,17 @@ from ..utils.api_url import normalize_api_url
 
 logger = logging.getLogger(__name__)
 
-# cv2 和 numpy 延迟导入，避免启动时版本冲突
+# 图片缩放配置常量
+MAX_IMAGE_DIMENSION = 1920  # 最大图片边长，超过此值触发缩放
+TARGET_IMAGE_DIMENSION = 1904  # 目标最大边长 (28 * 68)
+IMAGE_SIZE_MULTIPLE = 28  # VLM要求图片尺寸为该值的倍数
+
+# cv2 延迟导入，避免启动时版本冲突
 _cv2 = None
-_numpy = None
 
 
 def _get_cv2():
-    """延迟加载 cv2"""
+    """延迟加载 cv2，避免 numpy 版本冲突"""
     global _cv2
     if _cv2 is None:
         import cv2
@@ -32,19 +36,10 @@ def _get_cv2():
     return _cv2
 
 
-def _get_numpy():
-    """延迟加载 numpy"""
-    global _numpy
-    if _numpy is None:
-        import numpy as np
-        _numpy = np
-    return _numpy
-
-
 def _resize_image_for_vlm(image):
     """
     将大图压缩到宽或高为28的倍数（最接近的尺寸），保持纵横比
-    触发条件: 宽 > 1920 或 高 > 1920
+    触发条件: 宽 > MAX_IMAGE_DIMENSION 或 高 > MAX_IMAGE_DIMENSION
 
     参数:
         image: numpy数组格式的图片 (H, W, C) 或 (H, W)
@@ -58,32 +53,29 @@ def _resize_image_for_vlm(image):
 
     h, w = image.shape[:2]
 
-    # 判断是否需要缩放：长边超过1920才触发
+    # 判断是否需要缩放：长边超过阈值才触发
     max_side = max(w, h)
-    if max_side <= 1920:
+    if max_side <= MAX_IMAGE_DIMENSION:
         return image, 1.0
 
     # 计算缩放比例：以长边为基准，缩放到最接近的28倍数
-    # 28 * 68 = 1904（小于1920的最大28倍数）
-    target_max = 1904  # 28 * 68
-
-    scale = target_max / max_side
+    scale = TARGET_IMAGE_DIMENSION / max_side
 
     # 计算新的宽高（保持纵横比）
     new_w = int(w * scale)
     new_h = int(h * scale)
 
     # 调整为28的倍数（四舍五入）
-    target_w = round(new_w / 28) * 28
-    target_h = round(new_h / 28) * 28
+    target_w = round(new_w / IMAGE_SIZE_MULTIPLE) * IMAGE_SIZE_MULTIPLE
+    target_h = round(new_h / IMAGE_SIZE_MULTIPLE) * IMAGE_SIZE_MULTIPLE
 
     # 防止调整后超过限制
-    target_w = min(target_w, 1904)
-    target_h = min(target_h, 1904)
+    target_w = min(target_w, TARGET_IMAGE_DIMENSION)
+    target_h = min(target_h, TARGET_IMAGE_DIMENSION)
 
     # 确保尺寸至少为28
-    target_w = max(target_w, 28)
-    target_h = max(target_h, 28)
+    target_w = max(target_w, IMAGE_SIZE_MULTIPLE)
+    target_h = max(target_h, IMAGE_SIZE_MULTIPLE)
 
     resized_img = cv2.resize(
         image, (target_w, target_h), interpolation=cv2.INTER_AREA
