@@ -21,6 +21,7 @@ ENV/
 # Project specific
 .trae/
 .playwright-cli/
+.playwright-mcp/
 output/
 
 # Database (keep structure, ignore data)
