@@ -176,6 +176,15 @@ def create_auto_annotation_task(defect_id, test_case_ids=None, clear_existing_bo
     # 检查配置
     config = Trueno3Config.query.first()
     print(f"[DEBUG] Trueno3Config: enabled={config.enabled if config else None}, host={config.service_host if config else None}")
+
+    if not config or not config.enabled:
+        return False, 'Trueno3 服务未启用'
+
+    if not config.service_host:
+        return False, 'Trueno3 服务地址未配置'
+
+    # 获取缺陷
+    defect = Defect.query.get(defect_id)
     if not defect:
         return False, '缺陷不存在'
 
@@ -186,7 +195,73 @@ def create_auto_annotation_task(defect_id, test_case_ids=None, clear_existing_bo
     test_cases = query.all()
     print(f"[DEBUG] TestCases: count={len(test_cases)}")
 
+    if not test_cases:
+        return False, '没有可标注的测试用例'
+
+    # 清除现有标注框
+    if clear_existing_boxes:
+        for tc in test_cases:
+            BoundingBox.query.filter_by(test_case_id=tc.id).delete()
+        db.session.commit()
+
+    # 创建任务
+    request_id = str(uuid.uuid4())
+    task = AutoAnnotationTask(
+        request_id=request_id,
+        defect_id=defect_id,
+        status='pending',
+        total_images=len(test_cases)
+    )
+    db.session.add(task)
+    db.session.flush()  # 获取 task.id
+
+    # 创建子任务项
+    for tc in test_cases:
+        item = AutoAnnotationItem(
+            task_id=task.id,
+            test_case_id=tc.id,
+            object_id=f'testcase-{tc.id}',
+            status='pending'
+        )
+        db.session.add(item)
+
+    db.session.commit()
+
+    # 异步发送请求
+    callback_host = config.callback_host or _get_local_ip()
+    callback_port = config.callback_port
+
+    if not callback_host:
+        task.status = 'failed'
+        task.error_message = '无法获取回调地址，请配置 callback_host'
+        db.session.commit()
+        return False, '无法获取回调地址，请配置 callback_host'
+
+    config_dict = {
+        'service_host': config.service_host,
+        'service_port': config.service_port,
+        'api_path': config.api_path
+    }
+
+    import threading
+    from flask import current_app
+
+    # 获取 app 实例
+    app = current_app._get_current_object()
+
+    def send_requests_async():
+        with app.app_context():
+            _send_analysis_requests(
+                task.id,
+                {'name': defect.name},
+                [{'id': tc.id, 'filepath': tc.filepath} for tc in test_cases],
+                config_dict,
+                callback_host,
+                callback_port
+            )
+
     thread = threading.Thread(target=send_requests_async)
+    thread.daemon = True
     thread.start()
 
     return True, task
@@ -260,22 +335,30 @@ def _send_analysis_requests(task_id, defect, test_cases, config, callback_host, 
 
     # 启动持续超时检查线程
     import threading
-    def timeout_checker():
-        import time
-        max_wait = AUTO_ANNOTATE_TIMEOUT_SECONDS * 3
-        checked_times = 0
-        while checked_times < 5:
-            time.sleep(max_wait / 5)
-            with app.app_context():
-                task = AutoAnnotationTask.query.get(task_id)
-                if not task or task.status not in ['pending', 'processing']:
-                    return
-                _check_task_completion(task_id)
-                checked_times += 1
+    from flask import current_app
 
-    checker_thread = threading.Thread(target=timeout_checker)
-    checker_thread.daemon = True
-    checker_thread.start()
+    try:
+        app_instance = current_app._get_current_object()
+    except RuntimeError:
+        app_instance = None
+
+    if app_instance:
+        def timeout_checker():
+            import time
+            max_wait = AUTO_ANNOTATE_TIMEOUT_SECONDS * 3
+            checked_times = 0
+            while checked_times < 5:
+                time.sleep(max_wait / 5)
+                with app_instance.app_context():
+                    task = AutoAnnotationTask.query.get(task_id)
+                    if not task or task.status not in ['pending', 'processing']:
+                        return
+                    _check_task_completion(task_id)
+                    checked_times += 1
+
+        checker_thread = threading.Thread(target=timeout_checker)
+        checker_thread.daemon = True
+        checker_thread.start()
 
 
 def _build_analyze_request(test_case, defect, config, request_id, callback_host, callback_port):

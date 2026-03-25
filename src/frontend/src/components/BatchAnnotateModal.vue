@@ -16,33 +16,44 @@
               清除现有标注框
             </label>
           </div>
-          
+
           <div v-if="isLoading" class="batch-defect-loading">
             <span class="material-icons spinning">sync</span>
             <span>正在获取服务缺陷列表...</span>
           </div>
-          
+
           <div v-else-if="defects.length > 0" class="batch-defect-list">
-            <label 
-              v-for="defect in defects" 
-              :key="defect.id" 
+            <div class="batch-defect-actions">
+              <button class="btn btn-secondary btn-sm" @click="selectAllWithImages">
+                全选（有图片）
+              </button>
+              <button class="btn btn-secondary btn-sm" @click="clearSelection">
+                清空选择
+              </button>
+              <span class="selection-count">已选 {{ selectedDefectIds.length }} 个</span>
+            </div>
+            <label
+              v-for="defect in defects"
+              :key="defect.id"
               class="defect-checkbox"
             >
-              <input 
-                type="checkbox" 
-                :value="defect.id" 
+              <input
+                type="checkbox"
+                :value="defect.id"
                 v-model="selectedDefectIds"
               >
               <span>{{ defect.name }}</span>
-              <span class="defect-count">({{ defect.testcase_count || 0 }} 张图片)</span>
+              <span class="defect-count" :class="{ 'no-images': !defect.testcase_count }">
+                ({{ defect.testcase_count || 0 }} 张图片)
+              </span>
             </label>
           </div>
-          
+
           <div v-else-if="error" class="batch-defect-error">
             <span class="material-icons">error_outline</span>
             <span>{{ error }}</span>
           </div>
-          
+
           <div v-if="isRunning" class="batch-progress">
             <div class="progress-bar">
               <div class="progress-fill" :style="{ width: progress + '%' }"></div>
@@ -52,8 +63,8 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" @click="close">取消</button>
-          <button 
-            class="btn btn-primary" 
+          <button
+            class="btn btn-primary"
             :disabled="selectedDefectIds.length === 0 || isRunning"
             @click="startAnnotation"
           >
@@ -68,9 +79,11 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useUIStore } from '../stores/ui'
+import { useDefectStore } from '../stores/defect'
 import { api } from '../api'
 
 const uiStore = useUIStore()
+const defectStore = useDefectStore()
 
 const emit = defineEmits(['completed'])
 
@@ -113,11 +126,29 @@ async function loadDefects() {
     } else {
       defects.value = []
     }
+
+    // 默认勾选当前缺陷
+    if (defectStore.currentDefect?.id) {
+      const currentId = defectStore.currentDefect.id
+      if (defects.value.some(d => d.id === currentId)) {
+        selectedDefectIds.value = [currentId]
+      }
+    }
   } catch (err) {
     error.value = '获取缺陷列表失败: ' + err.message
   } finally {
     isLoading.value = false
   }
+}
+
+function selectAllWithImages() {
+  selectedDefectIds.value = defects.value
+    .filter(d => d.testcase_count > 0)
+    .map(d => d.id)
+}
+
+function clearSelection() {
+  selectedDefectIds.value = []
 }
 
 async function startAnnotation() {
@@ -249,6 +280,21 @@ onMounted(() => {
   padding: 12px;
 }
 
+.batch-defect-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.selection-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .defect-checkbox {
   display: flex;
   align-items: center;
@@ -267,6 +313,10 @@ onMounted(() => {
   color: var(--text-muted);
   font-size: 12px;
   margin-left: auto;
+}
+
+.defect-count.no-images {
+  color: var(--warning-color);
 }
 
 .batch-defect-error {

@@ -20,7 +20,13 @@ defect_bp = Blueprint('defect', __name__, url_prefix='/api')
 def get_defects():
     """获取所有缺陷列表"""
     defects = Defect.query.order_by(Defect.created_at.desc()).all()
-    return jsonify([d.to_dict() for d in defects])
+    result = []
+    for d in defects:
+        defect_dict = d.to_dict()
+        # 添加测试用例数量
+        defect_dict['testcase_count'] = TestCase.query.filter_by(defect_id=d.id).count()
+        result.append(defect_dict)
+    return jsonify(result)
 
 
 @defect_bp.route('/defect', methods=['POST'])

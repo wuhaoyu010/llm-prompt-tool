@@ -330,11 +330,11 @@ function drawAnnotations() {
     const h = normToPixel(box.height, naturalSize.value.height)
     
     const isSelected = selectedBox.value?.id === box.id
-    
-    // 绘制矩形框
-    ctx.strokeStyle = isSelected ? '#6366F1' : '#4F46E5'
-    ctx.lineWidth = isSelected ? 3 : 2
-    ctx.fillStyle = isSelected ? 'rgba(79, 70, 229, 0.3)' : 'rgba(79, 70, 229, 0.2)'
+
+    // 绘制矩形框（红色）
+    ctx.strokeStyle = isSelected ? '#DC2626' : '#EF4444'
+    ctx.lineWidth = isSelected ? 2 : 1
+    ctx.fillStyle = isSelected ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)'
     
     ctx.fillRect(x, y, w, h)
     ctx.strokeRect(x, y, w, h)
@@ -358,11 +358,11 @@ function drawAnnotations() {
     const y = Math.min(drawStart.value.y, drawStart.value.currentY)
     const w = Math.abs(drawStart.value.currentX - drawStart.value.x)
     const h = Math.abs(drawStart.value.currentY - drawStart.value.y)
-    
-    ctx.strokeStyle = '#4F46E5'
-    ctx.lineWidth = 2
+
+    ctx.strokeStyle = '#EF4444'
+    ctx.lineWidth = 1
     ctx.setLineDash([5, 5])
-    ctx.fillStyle = 'rgba(79, 70, 229, 0.3)'
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.3)'
     
     ctx.fillRect(x, y, w, h)
     ctx.strokeRect(x, y, w, h)
@@ -385,7 +385,7 @@ function drawResizeHandles(ctx, x, y, w, h) {
     { x: x - handleSize/2, y: y + h/2 - handleSize/2 } // 左中
   ]
   
-  ctx.fillStyle = '#6366F1'
+  ctx.fillStyle = '#DC2626'
   handles.forEach(handle => {
     ctx.fillRect(handle.x, handle.y, handleSize, handleSize)
   })
