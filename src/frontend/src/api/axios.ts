@@ -66,6 +66,10 @@ axiosInstance.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    // 让 FormData 自动设置正确的 Content-Type（包含 boundary）
+    if (config.data instanceof FormData) {
+      config.headers.delete('Content-Type')
+    }
     return config
   },
   (error) => {
