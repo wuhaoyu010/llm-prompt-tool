@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5"/>
+      <stop offset="100%" style="stop-color:#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <!-- 背景圆 -->
+  <circle cx="16" cy="16" r="15" fill="url(#grad)"/>
+  <!-- 大脑/AI 图标 -->
+  <g fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 左脑 -->
+    <path d="M12 8c-2 0-4 2-4 5s1 4 2 5c1 1 1 3 0 4"/>
+    <path d="M8 13c1 0 2 0 3 1"/>
+    <path d="M10 10c0 1 0 2-1 3"/>
+    <!-- 右脑 -->
+    <path d="M20 8c2 0 4 2 4 5s-1 4-2 5c-1 1-1 3 0 4"/>
+    <path d="M24 13c-1 0-2 0-3 1"/>
+    <path d="M22 10c0 1 0 2 1 3"/>
+    <!-- 中间连接 -->
+    <path d="M12 16h8"/>
+    <path d="M14 12v8"/>
+    <path d="M18 12v8"/>
+  </g>
+</svg>
