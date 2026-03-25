@@ -263,6 +263,7 @@ const isDragOver = ref(false)
 const selectedBox = ref(null)
 const naturalSize = ref({ width: 0, height: 0 })
 const scrollPosition = ref({ x: 0, y: 0 }) // 追踪滚动位置
+const wrapperSize = ref({ width: 0, height: 0 }) // 追踪容器尺寸
 
 // 预设标签
 const presetLabel = ref('')
@@ -362,9 +363,19 @@ const resizeHandlePositions = computed(() => {
   const scrollLeft = scrollPosition.value.x
   const scrollTop = scrollPosition.value.y
 
+  // 计算图片容器在 wrapper 中的偏移
+  const wrapperWidth = wrapperSize.value.width
+  const wrapperHeight = wrapperSize.value.height
+  const scaledWidth = naturalSize.value.width * scale.value
+  const scaledHeight = naturalSize.value.height * scale.value
+
+  // 图片容器的左上角在 wrapper 中的位置（居中偏移）
+  const containerOffsetX = Math.max(0, (wrapperWidth - scaledWidth) / 2 - 20) // 减去 wrapper padding 20px
+  const containerOffsetY = Math.max(0, (wrapperHeight - scaledHeight) / 2 - 20)
+
   // 计算手柄在屏幕上的位置
-  const screenX = x * scale.value + scrollLeft
-  const screenY = y * scale.value + scrollTop
+  const screenX = containerOffsetX + x * scale.value - scrollLeft
+  const screenY = containerOffsetY + y * scale.value - scrollTop
   const screenW = w * scale.value
   const screenH = h * scale.value
 
@@ -416,10 +427,13 @@ function onImageLoad() {
       height: imageEl.value.naturalHeight
     }
     canvasSize.value = { ...naturalSize.value }
-    
+
     // 自动适应屏幕
     nextTick(() => {
       fitToScreen()
+      // 初始化滚动位置和容器尺寸
+      updateScrollPosition()
+      updateWrapperSize()
       drawAnnotations()
     })
   }
@@ -898,6 +912,16 @@ function updateScrollPosition() {
   }
 }
 
+// 更新容器尺寸（用于手柄位置计算）
+function updateWrapperSize() {
+  if (canvasWrapper.value) {
+    wrapperSize.value = {
+      width: canvasWrapper.value.clientWidth,
+      height: canvasWrapper.value.clientHeight
+    }
+  }
+}
+
 function fitToScreen() {
   if (!canvasWrapper.value || !naturalSize.value.width) return
   
@@ -1075,11 +1099,15 @@ watch(() => defectStore.currentDefect, (defect) => {
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
   window.addEventListener('keyup', handleKeyUp)
+  window.addEventListener('resize', updateWrapperSize)
+  // 初始化容器尺寸
+  updateWrapperSize()
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
   window.removeEventListener('keyup', handleKeyUp)
+  window.removeEventListener('resize', updateWrapperSize)
 })
 </script>
 
