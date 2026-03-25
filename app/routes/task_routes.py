@@ -97,6 +97,7 @@ def run_regression_test():
     """执行回归测试"""
     data = request.json
     version_id = data.get('version_id')
+<<<<<<< HEAD
     defect_id = data.get('defect_id')
     use_real_llm = data.get('use_real_llm', False)
     model_name = data.get('model_name', 'Pro/Qwen/Qwen2.5-VL-7B-Instruct')
@@ -111,6 +112,15 @@ def run_regression_test():
             return jsonify({'error': 'No version found for this defect'}), 404
     else:
         return jsonify({'error': 'Missing version_id or defect_id'}), 400
+=======
+    use_real_llm = data.get('use_real_llm', False)
+    model_name = data.get('model_name', 'Pro/Qwen/Qwen2.5-VL-7B-Instruct')
+
+    if not version_id:
+        return jsonify({'error': 'Missing version_id'}), 400
+
+    defect_version = DefectVersion.query.get_or_404(version_id)
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
     test_cases = TestCase.query.filter_by(defect_id=defect_version.defect_id).all()
 
     llm_function = run_real_llm if use_real_llm else run_mock_llm

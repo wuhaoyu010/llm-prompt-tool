@@ -20,8 +20,12 @@ from ..database import db, Defect, TestCase, BoundingBox, Trueno3Config, AutoAnn
 
 
 # 自动标注超时配置
+<<<<<<< HEAD
 AUTO_ANNOTATE_TIMEOUT_SECONDS = 20
 AUTO_ANNOTATE_MAX_RETRIES = 2
+=======
+AUTO_ANNOTATE_TIMEOUT_SECONDS = 20  # 单图最长处理时间
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
 
 
 def _get_local_ip():
@@ -175,7 +179,10 @@ def create_auto_annotation_task(defect_id, test_case_ids=None, clear_existing_bo
     """
     # 检查配置
     config = Trueno3Config.query.first()
+<<<<<<< HEAD
     print(f"[DEBUG] Trueno3Config: enabled={config.enabled if config else None}, host={config.service_host if config else None}")
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
     if not config or not config.enabled:
         return False, 'Trueno3 服务未启用'
 
@@ -194,7 +201,10 @@ def create_auto_annotation_task(defect_id, test_case_ids=None, clear_existing_bo
 
     # 获取缺陷
     defect = Defect.query.get(defect_id)
+<<<<<<< HEAD
     print(f"[DEBUG] Defect: id={defect_id}, found={defect is not None}")
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
     if not defect:
         return False, '缺陷不存在'
 
@@ -203,7 +213,10 @@ def create_auto_annotation_task(defect_id, test_case_ids=None, clear_existing_bo
     if test_case_ids:
         query = query.filter(TestCase.id.in_(test_case_ids))
     test_cases = query.all()
+<<<<<<< HEAD
     print(f"[DEBUG] TestCases: count={len(test_cases)}")
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
 
     if not test_cases:
         return False, '没有可处理的测试用例'
@@ -243,6 +256,7 @@ def create_auto_annotation_task(defect_id, test_case_ids=None, clear_existing_bo
 
     db.session.commit()
 
+<<<<<<< HEAD
     # 异步发送请求 - 先提取数据避免 session detached 问题
     from flask import current_app
     import threading
@@ -274,6 +288,15 @@ def create_auto_annotation_task(defect_id, test_case_ids=None, clear_existing_bo
     def send_requests_async():
         with app.app_context():
             _send_analysis_requests(task.id, defect_data, test_cases_data, config_data, callback_host, callback_port)
+=======
+    # 异步发送请求
+    from flask import current_app
+    import threading
+
+    def send_requests_async():
+        with current_app.app_context():
+            _send_analysis_requests(task.id, defect, test_cases, config, callback_host, callback_port)
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
 
     thread = threading.Thread(target=send_requests_async)
     thread.start()
@@ -292,18 +315,28 @@ def _send_analysis_requests(task_id, defect, test_cases, config, callback_host, 
     task.status = 'processing'
     db.session.commit()
 
+<<<<<<< HEAD
     service_host = config['service_host']
     api_url = f"http://{service_host}:{config['service_port']}{config['api_path']}"
+=======
+    service_host = config.service_host or config.ssh_host
+    api_url = f'http://{service_host}:{config.service_port}{config.api_path}'
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
 
     for tc in test_cases:
         item = AutoAnnotationItem.query.filter_by(
             task_id=task_id,
+<<<<<<< HEAD
             test_case_id=tc['id']
+=======
+            test_case_id=tc.id
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
         ).first()
 
         if not item:
             continue
 
+<<<<<<< HEAD
         retry_count = 0
         last_error = None
 
@@ -341,12 +374,38 @@ def _send_analysis_requests(task_id, defect, test_cases, config, callback_host, 
             if retry_count <= AUTO_ANNOTATE_MAX_RETRIES and item.status != 'processing':
                 import time
                 time.sleep(1)
+=======
+        try:
+            # 构建请求
+            request_body = _build_analyze_request(tc, defect, config, task.request_id, callback_host, callback_port)
+
+            # 发送请求（超时20秒）
+            response = requests.post(
+                api_url,
+                json=request_body,
+                headers={'Content-Type': 'application/json'},
+                timeout=AUTO_ANNOTATE_TIMEOUT_SECONDS
+            )
+
+            if response.status_code == 200:
+                item.status = 'processing'  # 等待回调
+            else:
+                item.status = 'failed'
+                item.error_message = f'HTTP {response.status_code}: {response.text[:200]}'
+                task.processed_images += 1
+
+        except Exception as e:
+            item.status = 'failed'
+            item.error_message = str(e)
+            task.processed_images += 1
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
 
         db.session.commit()
 
     # 检查是否所有请求都已发送完成 (可能还在等待回调)
     _check_task_completion(task_id)
 
+<<<<<<< HEAD
     # 启动持续超时检查线程
     import threading
     def timeout_checker():
@@ -361,6 +420,15 @@ def _send_analysis_requests(task_id, defect, test_cases, config, callback_host, 
                     return
                 _check_task_completion(task_id)
                 checked_times += 1
+=======
+    # 启动超时检查线程
+    import threading
+    def timeout_checker():
+        import time
+        time.sleep(AUTO_ANNOTATE_TIMEOUT_SECONDS + 2)  # 等待超时时间 + 2秒缓冲
+        with current_app.app_context():
+            _check_task_completion(task_id)
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
 
     checker_thread = threading.Thread(target=timeout_checker)
     checker_thread.daemon = True
@@ -372,12 +440,17 @@ def _build_analyze_request(test_case, defect, config, request_id, callback_host,
     构建 Trueno3 API 请求参数
     """
     # 读取图片并转 base64
+<<<<<<< HEAD
     tc_id = test_case['id']
     tc_filepath = test_case['filepath']
     defect_name = defect['name']
 
     try:
         with open(tc_filepath, 'rb') as f:
+=======
+    try:
+        with open(test_case.filepath, 'rb') as f:
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             image_base64 = base64.b64encode(f.read()).decode('utf-8')
     except Exception as e:
         raise ValueError(f'读取图片失败: {e}')
@@ -388,11 +461,19 @@ def _build_analyze_request(test_case, defect, config, request_id, callback_host,
         'requestId': request_id,
         'objectList': [
             {
+<<<<<<< HEAD
                 'objectId': f'testcase-{tc_id}',
                 'typeList': [defect_name],
                 'imageUrlList': [''],
                 'imageBase64': image_base64,
                 'imageRecogType': defect_name,
+=======
+                'objectId': f'testcase-{test_case.id}',
+                'typeList': [defect.name],
+                'imageUrlList': [''],
+                'imageBase64': image_base64,
+                'imageRecogType': defect.name,
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                 'parameter': {}
             }
         ]
@@ -542,6 +623,7 @@ def _check_task_completion(task_id):
     if not task:
         return
 
+<<<<<<< HEAD
     if task.status not in ['pending', 'processing']:
         return
 
@@ -549,11 +631,22 @@ def _check_task_completion(task_id):
 
     total_items = len(task.items)
 
+=======
+    # 先检查超时的子任务
+    _check_timeout_items(task_id)
+
+    # 统计子任务状态
+    total_items = AutoAnnotationItem.query.filter_by(task_id=task_id).count()
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
     completed_items = AutoAnnotationItem.query.filter_by(task_id=task_id).filter(
         AutoAnnotationItem.status.in_(['completed', 'failed'])
     ).count()
 
     if completed_items >= total_items:
+<<<<<<< HEAD
+=======
+        # 检查是否全部失败
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
         failed_items = AutoAnnotationItem.query.filter_by(task_id=task_id, status='failed').count()
         if failed_items >= total_items:
             task.status = 'failed'

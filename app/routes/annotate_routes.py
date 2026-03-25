@@ -50,7 +50,10 @@ def start_auto_annotate(defect_id):
         })
     else:
         error_msg = result
+<<<<<<< HEAD
         print(f"[DEBUG] auto_annotate failed: {error_msg}, defect_id={defect_id}")
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
         if '未配置' in error_msg or '未启用' in error_msg:
             return jsonify({'success': False, 'error': error_msg}), 503
         else:

@@ -189,6 +189,7 @@ def test_trueno3_service():
             return jsonify(result), 503
 
     except Exception as e:
+<<<<<<< HEAD
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -334,3 +335,6 @@ def get_service_status():
         }
 
     return jsonify(response)
+=======
+        return jsonify({'success': False, 'error': str(e)}), 500
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66

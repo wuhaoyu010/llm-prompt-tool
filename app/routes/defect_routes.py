@@ -342,6 +342,7 @@ def update_defect_version(version_id):
     if trueno3_sync_result:
         response['trueno3_sync'] = trueno3_sync_result
 
+<<<<<<< HEAD
     return jsonify(response)
 
 
@@ -398,3 +399,6 @@ def run_defect_inference(defect_id):
         },
         'version': defect_version.to_dict()
     })
+=======
+    return jsonify(response)
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66

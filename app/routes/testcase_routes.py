@@ -8,8 +8,11 @@
 
 import os
 import json
+<<<<<<< HEAD
 import uuid
 from datetime import datetime
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
 from flask import Blueprint, request, jsonify
 from werkzeug.utils import secure_filename
 
@@ -122,6 +125,7 @@ def update_test_case_type(test_case_id):
     case.is_positive = is_positive
     db.session.commit()
 
+<<<<<<< HEAD
     return jsonify({'success': True, 'message': f'测试用例已更新为{"正例" if is_positive else "反例"}'})
 
 
@@ -243,3 +247,6 @@ def add_test_cases_to_defect(defect_id):
         'test_cases': created_cases,
         'errors': errors
     })
+=======
+    return jsonify({'success': True, 'message': f'测试用例已更新为{"正例" if is_positive else "反例"}'})
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66

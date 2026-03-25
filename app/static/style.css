@@ -1145,6 +1145,7 @@ input[type="email"] {
     -webkit-backdrop-filter: blur(5px);
     z-index: 1001; 
 }
+<<<<<<< HEAD
 .modal {
     display: flex;
     position: fixed;
@@ -1159,6 +1160,21 @@ input[type="email"] {
     width: 90%;
     max-width: 600px;
     max-height: 80vh;
+=======
+.modal { 
+    display: none; 
+    position: fixed; 
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%); 
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-radius: 20px; 
+    z-index: 1002; 
+    width: 90%; 
+    max-width: 600px; 
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
     border: 1px solid var(--glass-border);
     box-shadow: 
         0 25px 50px -12px rgba(0, 0, 0, 0.5),
@@ -2461,6 +2477,7 @@ input[type="email"] {
     color: var(--primary-color);
 }
 
+<<<<<<< HEAD
 /* 自动保存指示器 */
 .auto-save-indicator {
     display: flex;
@@ -2495,6 +2512,8 @@ input[type="email"] {
     border-color: var(--primary-color);
 }
 
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
 .modal-lg {
     max-width: 700px;
     width: 90%;
@@ -3089,6 +3108,7 @@ input[type="email"] {
     border-color: var(--primary-color);
 }
 
+<<<<<<< HEAD
 /* --- 标注框右键菜单 --- */
 .context-menu {
     position: absolute;
@@ -3120,6 +3140,8 @@ input[type="email"] {
     color: var(--text-secondary);
 }
 
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
 /* --- 标注框标签 --- */
 .box-label {
     position: absolute;

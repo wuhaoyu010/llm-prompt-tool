@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         batchSelectedIds: [],  // 批量选中的测试用例ID
         batchImportFiles: [],  // 批量导入的文件列表
         boxLabels: {},  // 标注框标签 { boxId: label }
+<<<<<<< HEAD
         // 暂存区相关
         annotationCache: {},  // 暂存区 { testCaseId: { boxes, history, historyIndex, isDirty, lastSaved } }
         autoSaveInterval: 60000,  // 自动保存间隔(ms)，默认1分钟
@@ -112,6 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
             state.isLoading = true;
             Loading._lastMessage = message;
 
+=======
+    };
+    
+    // --- Loading 管理 ---
+    const Loading = {
+        show(message = '加载中...') {
+            state.isLoading = true;
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             let overlay = document.getElementById('loading-overlay');
             if (!overlay) {
                 overlay = document.createElement('div');
@@ -123,9 +132,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
                 document.body.appendChild(overlay);
+<<<<<<< HEAD
             } else {
                 overlay.querySelector('.loading-message').textContent = message;
             }
+=======
+            }
+            overlay.querySelector('.loading-message').textContent = message;
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             overlay.style.display = 'flex';
         },
         
@@ -355,7 +369,10 @@ document.addEventListener('DOMContentLoaded', () => {
         annotationCanvas: document.getElementById('annotation-canvas'),
         uploadPlaceholder: document.getElementById('upload-placeholder'),
         imageUploadInput: document.getElementById('image-upload-input'),
+<<<<<<< HEAD
         boxContextMenu: document.getElementById('box-context-menu'),
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
         
         testCaseList: document.getElementById('test-case-list'),
         drawBoxBtn: document.getElementById('draw-box-btn'),
@@ -401,7 +418,10 @@ document.addEventListener('DOMContentLoaded', () => {
         batchAutoAnnotateBtn: document.getElementById('batch-auto-annotate-btn'),
         batchDefectAutoAnnotateBtn: document.getElementById('batch-defect-auto-annotate-btn'),
         batchDefectAnnotateModal: document.getElementById('batch-defect-annotate-modal'),
+<<<<<<< HEAD
         singleDefectAnnotateModal: document.getElementById('single-defect-annotate-modal'),
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
         shortcutToggle: document.getElementById('shortcut-toggle'),
         shortcutsPanel: document.getElementById('shortcuts-panel'),
         boxLabelEditor: document.getElementById('box-label-editor'),
@@ -854,6 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const indicator = document.getElementById('llm-status-indicator');
             if (!indicator) return;
 
+<<<<<<< HEAD
             try {
                 const result = await fetch('/api/llm_health').then(r => r.json());
                 const newClass = result.status === 'online' ? 'online' : 'offline';
@@ -880,6 +901,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (statusText.textContent !== '检查失败') {
                     statusText.textContent = '检查失败';
                 }
+=======
+            const statusDot = indicator.querySelector('.status-dot');
+            const statusText = indicator.querySelector('.status-text');
+
+            // 设置检查中状态
+            indicator.className = 'llm-status-indicator checking';
+            statusText.textContent = '检查中...';
+
+            try {
+                const result = await fetch('/api/llm_health').then(r => r.json());
+
+                if (result.status === 'online') {
+                    indicator.className = 'llm-status-indicator online';
+                    statusText.textContent = result.message;
+                    indicator.title = result.details;
+                } else {
+                    indicator.className = 'llm-status-indicator offline';
+                    statusText.textContent = result.message;
+                    indicator.title = result.details;
+                }
+            } catch (error) {
+                indicator.className = 'llm-status-indicator offline';
+                statusText.textContent = '检查失败';
+                indicator.title = error.message;
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             }
         },
 
@@ -1133,6 +1179,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async loadTestCase(testCaseId) {
             if (state.currentTestCaseId === testCaseId) return;
+<<<<<<< HEAD
 
             // 自动保存当前图片到暂存区（无弹框，类似 CVAT）
             if (state.currentTestCaseId) {
@@ -1147,12 +1194,24 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.test-case-item img').forEach(img => {
                 img.classList.toggle('selected', img.dataset.id == testCaseId);
             });
+=======
+            state.currentTestCaseId = testCaseId;
+            state.currentImage.file = null;
+
+            // 更新旧的选择器
+            document.querySelectorAll('.test-case-item img').forEach(img => {
+                img.classList.toggle('selected', img.dataset.id == testCaseId);
+            });
+            
+            // 更新新的缩略图选中状态
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             document.querySelectorAll('.thumbnail-item').forEach(item => {
                 item.classList.toggle('selected', item.dataset.id == testCaseId);
                 if (item.dataset.id == testCaseId) {
                     item.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                 }
             });
+<<<<<<< HEAD
 
             // 尝试从暂存区加载
             const cache = state.annotationCache[testCaseId];
@@ -1169,6 +1228,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 启动自动保存定时器
             this.startAutoSaveTimer();
+=======
+            
+            const testCase = state.testCases.find(tc => tc.id == testCaseId);
+            if (testCase) {
+                await this.loadImageOnCanvas(`/${testCase.filepath}`);
+                // loadImageOnCanvas 是 Promise，await 后图片已加载完成，直接渲染标注框
+                this.renderBoxesOnCanvas(testCaseId);
+            }
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
         },
         
         // 渲染标注框到画布
@@ -1215,6 +1283,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.fabricCanvas.renderAll();
         },
 
+<<<<<<< HEAD
         // 保存当前标注到暂存区
         saveToCache(testCaseId) {
             if (!state.fabricCanvas || !testCaseId) return;
@@ -1310,6 +1379,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
         // --- 画布与标注 ---
         initCanvas() {
             const canvasEl = dom.annotationCanvas;
@@ -1422,9 +1493,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 显示成功提示
                 Notification.success('标注框已添加', '标注成功', 2000);
 
+<<<<<<< HEAD
                 // 自动保存到暂存区（类似 CVAT）
                 if (state.currentTestCaseId) {
                     this.saveToCache(state.currentTestCaseId);
+=======
+                // 自动保存标注到当前测试用例
+                if (state.currentTestCaseId) {
+                    await this.autoSaveAnnotation();
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                 }
             });
             
@@ -1435,16 +1512,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.fabricCanvas.remove(target);
                     Notification.success('标注框已删除', '删除成功', 2000);
 
+<<<<<<< HEAD
                     // 自动保存到暂存区（类似 CVAT）
                     if (state.currentTestCaseId) {
                         this.saveToCache(state.currentTestCaseId);
+=======
+                    // 自动保存标注到当前测试用例
+                    if (state.currentTestCaseId) {
+                        await this.autoSaveAnnotation();
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                     }
                 }
             });
             
             // 选中时的样式
             state.fabricCanvas.on('selection:created', (e) => {
+<<<<<<< HEAD
                 const target = e.selected && e.selected[0];
+=======
+                const target = e.selected[0];
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                 if (target && target.type === 'rect') {
                     target.set({
                         stroke: '#fbbc05',
@@ -1456,7 +1543,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // 取消选中时恢复样式
             state.fabricCanvas.on('selection:cleared', (e) => {
+<<<<<<< HEAD
                 const target = e.deselected && e.deselected[0];
+=======
+                const target = e.deselected[0];
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                 if (target && target.type === 'rect') {
                     target.set({
                         stroke: '#ea4335',
@@ -1480,6 +1571,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 e.stopPropagation();
 
+<<<<<<< HEAD
                 const delta = e.deltaY > 0 ? 0.9 : 1.1;
                 const newZoom = Math.max(0.5, Math.min(5, state.canvasZoom * delta));
                 state.canvasZoom = newZoom;
@@ -1489,14 +1581,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.fabricCanvas.zoomToPoint({ x: center.left, y: center.top }, newZoom);
 
                 this.updateZoomIndicator();
+=======
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;  // 缩放因子
+                const newZoom = Math.max(0.5, Math.min(5, state.canvasZoom * delta));
+                state.canvasZoom = newZoom;
+
+                this.applyCanvasTransform();
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             }, { passive: false });
 
             // --- 画布平移功能（中键或空格+左键）---
             wrapper.addEventListener('mousedown', (e) => {
+<<<<<<< HEAD
                 if (e.button === 1 || (e.button === 0 && state.isPanningMode)) {
                     e.preventDefault();
                     state.lastPanPoint = { x: e.clientX, y: e.clientY };
                     state.isPanning = true;
+=======
+                // 中键平移 或 空格+左键平移
+                if (e.button === 1 || (e.button === 0 && state.isPanningMode)) {
+                    e.preventDefault();
+                    state.lastPanPoint = { x: e.clientX, y: e.clientY };
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                     wrapper.style.cursor = 'grabbing';
                 }
             });
@@ -1507,19 +1613,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dx = e.clientX - state.lastPanPoint.x;
                 const dy = e.clientY - state.lastPanPoint.y;
 
+<<<<<<< HEAD
                 // 使用 Fabric.js 的 viewportTransform 实现统一平移
                 const vpt = state.fabricCanvas.viewportTransform;
                 vpt[4] += dx;
                 vpt[5] += dy;
 
                 state.lastPanPoint = { x: e.clientX, y: e.clientY };
+=======
+                state.canvasPan.x += dx;
+                state.canvasPan.y += dy;
+
+                state.lastPanPoint = { x: e.clientX, y: e.clientY };
+                this.applyCanvasTransform();
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             });
 
             wrapper.addEventListener('mouseup', (e) => {
                 if (state.lastPanPoint) {
                     state.lastPanPoint = null;
+<<<<<<< HEAD
                     state.isPanning = false;
                     state.fabricCanvas.requestRenderAll();  // 仅在结束时渲染一次
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                     wrapper.style.cursor = state.isPanningMode ? 'grab' : 'default';
                 }
             });
@@ -1527,8 +1644,11 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.addEventListener('mouseleave', (e) => {
                 if (state.lastPanPoint) {
                     state.lastPanPoint = null;
+<<<<<<< HEAD
                     state.isPanning = false;
                     state.fabricCanvas.requestRenderAll();  // 仅在结束时渲染一次
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                     wrapper.style.cursor = 'default';
                 }
             });
@@ -1542,6 +1662,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 计算图片在画布中的居中位置
             const wrapper = dom.canvasWrapper;
+<<<<<<< HEAD
 
             // 使用 Fabric.js viewportTransform 统一处理缩放和平移
             const baseScale = Math.min(wrapper.clientWidth / img.width, wrapper.clientHeight / img.height);
@@ -1554,6 +1675,25 @@ document.addEventListener('DOMContentLoaded', () => {
             vpt[5] = state.canvasPan.y + (wrapper.clientHeight - img.height * baseScale * state.canvasZoom) / 2;
 
             canvas.requestRenderAll();
+=======
+            const imgWidth = img.width * img.scaleX;
+            const imgHeight = img.height * img.scaleY;
+
+            // 应用缩放和平移
+            img.scaleX = img.scaleX / img.scaleX * img.width * state.canvasZoom;
+            img.scaleY = img.scaleY / img.scaleY * img.height * state.canvasZoom;
+
+            // 重置缩放基准
+            const baseScale = Math.min(wrapper.clientWidth / img.width, wrapper.clientHeight / img.height);
+            img.scaleX = baseScale * state.canvasZoom;
+            img.scaleY = baseScale * state.canvasZoom;
+
+            // 居中位置 + 平移偏移
+            img.left = (wrapper.clientWidth - img.width * img.scaleX) / 2 + state.canvasPan.x;
+            img.top = (wrapper.clientHeight - img.height * img.scaleY) / 2 + state.canvasPan.y;
+
+            canvas.renderAll();
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
 
             // 更新缩放指示器
             this.updateZoomIndicator();
@@ -1563,6 +1703,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resetCanvasView() {
             state.canvasZoom = 1;
             state.canvasPan = { x: 0, y: 0 };
+<<<<<<< HEAD
             // 重置 viewportTransform 到默认状态
             const canvas = state.fabricCanvas;
             if (canvas) {
@@ -1570,6 +1711,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 canvas.requestRenderAll();
             }
             this.updateZoomIndicator();
+=======
+            this.applyCanvasTransform();
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
         },
 
         // 更新缩放指示器
@@ -1700,6 +1844,7 @@ document.addEventListener('DOMContentLoaded', () => {
             dom.drawBoxBtn.classList.remove('active');
         },
         
+<<<<<<< HEAD
         // 记录操作到历史
         recordToHistory(action, data) {
             // 撤销后新操作会清空 redo 栈
@@ -1800,6 +1945,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 state.fabricCanvas.remove(lastRect);
                 Notification.success('已删除最后一个标注框', '删除成功', 2000);
+=======
+        undoLastBox() {
+            const objects = state.fabricCanvas.getObjects('rect');
+            if (objects.length > 0) {
+                state.fabricCanvas.remove(objects[objects.length - 1]);
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             }
         },
 
@@ -1872,7 +2023,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 自动保存
             if (state.currentTestCaseId) {
+<<<<<<< HEAD
                 await this.autoSaveAnnotation(true);  // 粘贴后保存需要更新缩略图
+=======
+                await this.autoSaveAnnotation();
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             }
         },
 
@@ -1892,6 +2047,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     else this.startDrawingMode();
                 }
                 // Ctrl/Cmd + Z: 撤销
+<<<<<<< HEAD
                 if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
                     e.preventDefault();
                     this.undo();
@@ -1900,6 +2056,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Z') {
                     e.preventDefault();
                     this.redo();
+=======
+                if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                    e.preventDefault();
+                    this.undoLastBox();
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                 }
                 // Delete: 删除选中框
                 if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -1907,11 +2068,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (activeObject && activeObject.type === 'rect') {
                         state.fabricCanvas.remove(activeObject);
                         Notification.success('标注框已删除', '删除成功', 2000);
+<<<<<<< HEAD
 
                         // 自动保存到暂存区（类似 CVAT）
                         if (state.currentTestCaseId) {
                             this.saveToCache(state.currentTestCaseId);
                         }
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                     }
                 }
                 // 空格: 切换平移模式
@@ -2123,13 +2287,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (state.isDrawingMode) this.stopDrawingMode();
                 else this.startDrawingMode();
             };
+<<<<<<< HEAD
             dom.undoBtn.onclick = () => this.undo();
+=======
+            dom.undoBtn.onclick = () => this.undoLastBox();
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             dom.addTestCaseBtn.onclick = () => this.addTestCase();
             if (dom.updateAnnotationBtn) {
                 dom.updateAnnotationBtn.onclick = () => this.updateAnnotation();
             }
             dom.clearCanvasBtn.onclick = () => this.clearCanvas();
 
+<<<<<<< HEAD
             // 自动保存间隔选择
             const autoSaveInterval = document.getElementById('auto-save-interval');
             if (autoSaveInterval) {
@@ -2139,6 +2308,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             }
 
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             // 新增按钮事件
             const panBtn = document.getElementById('pan-btn');
             if (panBtn) {
@@ -2270,6 +2441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 dom.selectAllThumbnails.onchange = () => this.toggleSelectAll();
             }
 
+<<<<<<< HEAD
             // 右键菜单功能
             if (dom.boxContextMenu) {
                 dom.boxContextMenu.addEventListener('click', (e) => {
@@ -2308,6 +2480,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             // 批量删除
             if (dom.batchDeleteBtn) {
                 dom.batchDeleteBtn.onclick = () => this.batchDeleteTestCases();
@@ -2499,8 +2673,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+<<<<<<< HEAD
             // 使用新的模态框显示确认对话框
             this.showSingleDefectAnnotateModal(testCaseId);
+=======
+            const testCase = state.testCases.find(tc => tc.id === testCaseId);
+            const testCaseName = testCase ? testCase.filename : `ID: ${testCaseId}`;
+
+            const result = await ConfirmDialog.askWithCheckbox(
+                `对「${testCaseName}」进行自动标注？`,
+                '清除现有标注框',
+                true
+            );
+
+            if (!result.confirmed) return;
+
+            const clearExisting = result.checkboxValue;
+
+            // 设置按钮为加载状态
+            const btn = document.querySelector(`.auto-annotate-btn[data-id="${testCaseId}"]`);
+            if (btn) {
+                btn.classList.add('loading');
+                btn.disabled = true;
+            }
+
+            Loading.show(`正在自动标注「${testCaseName}」...`);
+
+            try {
+                const result = await api.post(`/api/auto_annotate/defect/${state.currentDefectId}`, {
+                    clear_existing_boxes: clearExisting,
+                    test_case_ids: [testCaseId]
+                });
+
+                Loading.hide();
+
+                if (result.success) {
+                    Notification.success(`自动标注任务已启动`, '任务创建成功');
+                    this.pollAutoAnnotateStatus(result.task_id);
+                } else {
+                    Notification.error(result.error || '启动失败', '自动标注失败');
+                    if (btn) {
+                        btn.classList.remove('loading');
+                        btn.disabled = false;
+                    }
+                }
+            } catch (error) {
+                Loading.hide();
+                Notification.error(`启动失败: ${error.message}`, '自动标注失败');
+                if (btn) {
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                }
+            }
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
         },
 
         async pollAutoAnnotateStatus(taskId) {
@@ -2514,7 +2739,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const status = await api.get(`/api/auto_annotate/task/${taskId}`);
 
                     if (status.status === 'completed') {
+<<<<<<< HEAD
                         Loading.hide();
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                         Notification.success(
                             `自动标注完成！共生成 ${status.total_boxes_created} 个标注框`,
                             '任务完成'
@@ -2527,7 +2755,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     if (status.status === 'failed') {
+<<<<<<< HEAD
                         Loading.hide();
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                         Notification.error(status.error_message || '处理失败', '自动标注失败');
                         return;
                     }
@@ -2588,6 +2819,7 @@ document.addEventListener('DOMContentLoaded', () => {
             dom.modalBackdrop.style.display = 'none';
         },
 
+<<<<<<< HEAD
         // --- 单图自动标注模态框 ---
         currentSingleAnnotateTestCaseId: null,
 
@@ -2677,6 +2909,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
         async loadBatchDefectList() {
             const loadingEl = document.getElementById('batch-defect-loading');
             const listEl = document.getElementById('batch-defect-list');
@@ -3175,7 +3409,11 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         // 自动保存标注（静默保存，不显示加载提示）
+<<<<<<< HEAD
         async autoSaveAnnotation(showNotification = false) {
+=======
+        async autoSaveAnnotation() {
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             if (!state.currentTestCaseId) return;
 
             const boxes = this.getNormalizedBoxes();
@@ -3184,6 +3422,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const result = await api.put(`/api/testcase/${state.currentTestCaseId}/boxes`, { boxes });
                 if (result.success) {
+<<<<<<< HEAD
                     // 更新暂存区状态
                     if (state.annotationCache[state.currentTestCaseId]) {
                         state.annotationCache[state.currentTestCaseId].isDirty = false;
@@ -3200,6 +3439,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         Notification.success('标注已保存', '保存成功', 1500);
                     }
+=======
+                    // 静默更新预览图，不刷新整个列表以避免干扰用户
+                    const testCase = state.testCases.find(tc => tc.id == state.currentTestCaseId);
+                    if (testCase) {
+                        testCase.preview_url = testCase.filepath + '?t=' + Date.now();
+                    }
+                    // 显示一个微妙的提示
+                    Notification.success('标注已自动保存', '保存成功', 1500);
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                 }
             } catch (error) {
                 console.error('自动保存失败:', error);

@@ -100,9 +100,12 @@ class Defect(db.Model):
             "id": self.id,
             "name": self.name,
             "defect_cn": latest_version.defect_cn if latest_version else 'N/A',
+<<<<<<< HEAD
             "defect_class": latest_version.defect_class if latest_version else '',
             "judgment_points": latest_version.judgment_points if latest_version else '',
             "exclusions": latest_version.exclusions if latest_version else '',
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             "created_at": self.created_at.isoformat()
         }
     

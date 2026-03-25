@@ -28,23 +28,34 @@ def create_app():
     """创建并配置 Flask 应用"""
     data_dir = get_data_dir()
 
+<<<<<<< HEAD
     # 获取当前文件所在目录（app目录）
     app_dir = os.path.dirname(os.path.abspath(__file__))
 
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
     # 模板和静态文件路径（打包后在 _internal 目录）
     if getattr(sys, 'frozen', False):
         template_folder = os.path.join(sys._MEIPASS, 'app', 'templates')
         static_folder = os.path.join(sys._MEIPASS, 'app', 'static')
     else:
+<<<<<<< HEAD
         template_folder = os.path.join(app_dir, 'templates')
         static_folder = os.path.join(app_dir, 'static')
+=======
+        template_folder = 'templates'
+        static_folder = 'static'
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
 
     app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
     app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(data_dir, 'prompt_tool_v2.db')}"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = os.path.join(data_dir, 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+<<<<<<< HEAD
     app.config['TEMPLATES_AUTO_RELOAD'] = True  # 开发模式下自动重载模板
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
 
     # 确保上传目录存在
     ensure_directories(app.config['UPLOAD_FOLDER'])

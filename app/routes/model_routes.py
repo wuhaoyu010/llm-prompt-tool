@@ -74,6 +74,7 @@ def get_available_models():
 def check_llm_health_endpoint():
     """检查大模型服务健康状态"""
     config = LLMConfig.query.first()
+<<<<<<< HEAD
 
     # 获取请求参数中的模型名称
     model_name = request.args.get('model', '')
@@ -99,5 +100,7 @@ def check_llm_health_endpoint():
             })
 
     # 如果没有指定模型，只检查服务状态
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
     result = check_llm_health(config)
     return jsonify(result)

@@ -54,6 +54,9 @@ data/
 
 node_modules/
 app/utils/uploads/
+<<<<<<< HEAD
 
 artifacts/
 test-results/
+=======
+>>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
