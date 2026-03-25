@@ -357,7 +357,7 @@ function drawAnnotations() {
   const ctx = canvas.getContext('2d')
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-  // 小框阈值（像素）
+  // 小框阈值（基于屏幕像素，保持固定视觉大小）
   const SMALL_BOX_THRESHOLD = 40
 
   // 绘制所有标注框
@@ -368,21 +368,22 @@ function drawAnnotations() {
     const h = normToPixel(box.height, naturalSize.value.height)
 
     const isSelected = selectedBox.value?.id === box.id
-    const isSmallBox = w < SMALL_BOX_THRESHOLD || h < SMALL_BOX_THRESHOLD
 
-    // 边框样式
+    // 基于屏幕像素判断小框
+    const screenBoxW = w * scale.value
+    const screenBoxH = h * scale.value
+    const isSmallBox = screenBoxW < SMALL_BOX_THRESHOLD || screenBoxH < SMALL_BOX_THRESHOLD
+
+    // 边框样式 - 线宽保持固定屏幕像素
     ctx.strokeStyle = isSelected ? '#DC2626' : '#EF4444'
-    ctx.lineWidth = isSelected ? 2 : 1
+    ctx.lineWidth = (isSelected ? 2 : 1) / scale.value
 
     // 填充样式：根据框大小和选中状态动态调整
     if (isSelected) {
-      // 选中时无填充，通过边框和控制点表示
       ctx.fillStyle = 'transparent'
     } else if (isSmallBox) {
-      // 小框：极淡填充或不填充
       ctx.fillStyle = 'rgba(239, 68, 68, 0.08)'
     } else {
-      // 大框：适度填充
       ctx.fillStyle = 'rgba(239, 68, 68, 0.15)'
     }
 
@@ -391,20 +392,19 @@ function drawAnnotations() {
 
     // 绘制角点标记（帮助识别小框）
     if (!isSelected) {
-      drawCornerMarks(ctx, x, y, w, h, isSmallBox ? 4 : 3)
+      drawCornerMarks(ctx, x, y, w, h, (isSmallBox ? 4 : 3) / scale.value)
     }
 
     // 绘制标签
     if (box.label) {
       ctx.fillStyle = 'white'
-      ctx.font = 'bold 12px sans-serif'
-      ctx.fillText(box.label, x, y - 5)
+      ctx.font = `bold ${12 / scale.value}px sans-serif`
+      ctx.fillText(box.label, x, y - 5 / scale.value)
     }
 
     // 选中状态绘制控制点
     if (isSelected) {
       drawResizeHandles(ctx, x, y, w, h)
-      // 选中时也绘制中心点
       drawCenterMark(ctx, x, y, w, h)
     }
   })
@@ -417,8 +417,8 @@ function drawAnnotations() {
     const h = Math.abs(drawStart.value.currentY - drawStart.value.y)
 
     ctx.strokeStyle = '#EF4444'
-    ctx.lineWidth = 1
-    ctx.setLineDash([5, 5])
+    ctx.lineWidth = 1 / scale.value
+    ctx.setLineDash([5 / scale.value, 5 / scale.value])
     ctx.fillStyle = 'rgba(239, 68, 68, 0.1)'
 
     ctx.fillRect(x, y, w, h)
@@ -449,10 +449,10 @@ function drawCornerMarks(ctx, x, y, w, h, size) {
 function drawCenterMark(ctx, x, y, w, h) {
   const cx = x + w / 2
   const cy = y + h / 2
-  const markSize = 6
+  const markSize = 6 / scale.value // 保持屏幕固定大小
 
   ctx.strokeStyle = '#DC2626'
-  ctx.lineWidth = 1
+  ctx.lineWidth = 1 / scale.value
 
   // 水平线
   ctx.beginPath()
@@ -469,12 +469,15 @@ function drawCenterMark(ctx, x, y, w, h) {
 
 // 绘制调整大小的控制点
 function drawResizeHandles(ctx, x, y, w, h) {
-  // 小框阈值 - 小于此值的手柄会缩小
-  const SMALL_BOX_THRESHOLD = 30
-  const isSmallBox = w < SMALL_BOX_THRESHOLD || h < SMALL_BOX_THRESHOLD
+  // 手柄大小基于屏幕像素，保持固定视觉大小
+  // 除以 scale 使得放大图片时手柄不会跟着变大
+  const baseHandleSize = 5 // 屏幕上固定的像素大小
+  const handleSize = baseHandleSize / scale.value
 
-  // 根据框大小调整手柄尺寸
-  const handleSize = isSmallBox ? 4 : 6
+  // 小框阈值（基于屏幕像素）
+  const screenBoxW = w * scale.value
+  const screenBoxH = h * scale.value
+  const isSmallBox = screenBoxW < 40 || screenBoxH < 40
 
   // 小框只绘制4个角点，大框绘制全部8个
   const handles = isSmallBox ? [
@@ -497,7 +500,7 @@ function drawResizeHandles(ctx, x, y, w, h) {
     // 白色填充 + 红色边框的控制点
     ctx.fillStyle = 'white'
     ctx.strokeStyle = '#DC2626'
-    ctx.lineWidth = isSmallBox ? 1 : 1.5
+    ctx.lineWidth = 1.5 / scale.value // 线宽也保持固定
     ctx.beginPath()
     ctx.arc(handle.x, handle.y, handleSize, 0, Math.PI * 2)
     ctx.fill()
@@ -522,12 +525,14 @@ function getResizeHandle(x, y, box) {
   const bw = normToPixel(box.width, naturalSize.value.width)
   const bh = normToPixel(box.height, naturalSize.value.height)
 
-  // 小框阈值
-  const SMALL_BOX_THRESHOLD = 30
-  const isSmallBox = bw < SMALL_BOX_THRESHOLD || bh < SMALL_BOX_THRESHOLD
+  // 手柄检测半径基于屏幕像素，保持固定
+  const baseHandleRadius = 8 // 屏幕上固定的点击区域
+  const handleRadius = baseHandleRadius / scale.value
 
-  // 根据框大小调整检测半径
-  const handleRadius = isSmallBox ? 6 : 8
+  // 小框阈值（基于屏幕像素）
+  const screenBoxW = bw * scale.value
+  const screenBoxH = bh * scale.value
+  const isSmallBox = screenBoxW < 40 || screenBoxH < 40
 
   // 小框只有4个角点，大框有8个
   const handles = isSmallBox ? [
