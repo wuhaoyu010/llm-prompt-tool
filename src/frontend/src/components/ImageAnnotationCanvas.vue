@@ -139,6 +139,7 @@
       ref="canvasWrapper"
       @wheel="handleWheel"
       @dblclick="handleDoubleClick"
+      @scroll="updateScrollPosition"
     >
       <div 
         v-if="!imageUrl" 
@@ -188,25 +189,25 @@
           @mouseleave="handleMouseUp"
         ></canvas>
 
-        <!-- 选中框的调整手柄层（HTML实现，固定大小不受缩放影响） -->
-        <div
-          v-if="selectedBox && currentTool === 'select'"
-          class="resize-handles-layer"
-        >
-          <div
-            v-for="handle in resizeHandlePositions"
-            :key="handle.name"
-            class="resize-handle"
-            :style="handle.style"
-            :data-handle="handle.name"
-            @mousedown.stop="startResize($event, handle.name)"
-          ></div>
-        </div>
-        
         <!-- 绘制时的提示 -->
         <div v-if="currentTool !== 'select'" class="drawing-hint">
           {{ drawingHint }}
         </div>
+      </div>
+
+      <!-- 选中框的调整手柄层（独立于缩放容器，固定像素大小） -->
+      <div
+        v-if="selectedBox && currentTool === 'select'"
+        class="resize-handles-layer"
+      >
+        <div
+          v-for="handle in resizeHandlePositions"
+          :key="handle.name"
+          class="resize-handle"
+          :style="handle.style"
+          :data-handle="handle.name"
+          @mousedown.stop="startResize($event, handle.name)"
+        ></div>
       </div>
     </div>
     
@@ -261,6 +262,7 @@ const scale = ref(1)
 const isDragOver = ref(false)
 const selectedBox = ref(null)
 const naturalSize = ref({ width: 0, height: 0 })
+const scrollPosition = ref({ x: 0, y: 0 }) // 追踪滚动位置
 
 // 预设标签
 const presetLabel = ref('')
@@ -342,6 +344,7 @@ const resizeHandlePositions = computed(() => {
   if (!selectedBox.value || !naturalSize.value.width) return []
 
   const box = selectedBox.value
+  // Canvas 内的像素坐标
   const x = normToPixel(box.x, naturalSize.value.width)
   const y = normToPixel(box.y, naturalSize.value.height)
   const w = normToPixel(box.width, naturalSize.value.width)
@@ -355,21 +358,31 @@ const resizeHandlePositions = computed(() => {
   // 手柄大小（屏幕固定像素）
   const handleSize = 10
 
+  // 使用响应式滚动位置
+  const scrollLeft = scrollPosition.value.x
+  const scrollTop = scrollPosition.value.y
+
+  // 计算手柄在屏幕上的位置
+  const screenX = x * scale.value + scrollLeft
+  const screenY = y * scale.value + scrollTop
+  const screenW = w * scale.value
+  const screenH = h * scale.value
+
   // 小框只有4个角点，大框有8个
   const handles = isSmallBox ? [
-    { name: 'nw', cx: x, cy: y },
-    { name: 'ne', cx: x + w, cy: y },
-    { name: 'se', cx: x + w, cy: y + h },
-    { name: 'sw', cx: x, cy: y + h }
+    { name: 'nw', cx: screenX, cy: screenY },
+    { name: 'ne', cx: screenX + screenW, cy: screenY },
+    { name: 'se', cx: screenX + screenW, cy: screenY + screenH },
+    { name: 'sw', cx: screenX, cy: screenY + screenH }
   ] : [
-    { name: 'nw', cx: x, cy: y },
-    { name: 'n', cx: x + w/2, cy: y },
-    { name: 'ne', cx: x + w, cy: y },
-    { name: 'e', cx: x + w, cy: y + h/2 },
-    { name: 'se', cx: x + w, cy: y + h },
-    { name: 's', cx: x + w/2, cy: y + h },
-    { name: 'sw', cx: x, cy: y + h },
-    { name: 'w', cx: x, cy: y + h/2 }
+    { name: 'nw', cx: screenX, cy: screenY },
+    { name: 'n', cx: screenX + screenW/2, cy: screenY },
+    { name: 'ne', cx: screenX + screenW, cy: screenY },
+    { name: 'e', cx: screenX + screenW, cy: screenY + screenH/2 },
+    { name: 'se', cx: screenX + screenW, cy: screenY + screenH },
+    { name: 's', cx: screenX + screenW/2, cy: screenY + screenH },
+    { name: 'sw', cx: screenX, cy: screenY + screenH },
+    { name: 'w', cx: screenX, cy: screenY + screenH/2 }
   ]
 
   return handles.map(handle => ({
@@ -873,6 +886,16 @@ function zoomIn() {
 
 function zoomOut() {
   scale.value = Math.max(0.3, scale.value / 1.2)
+}
+
+// 更新滚动位置（用于手柄位置计算）
+function updateScrollPosition() {
+  if (canvasWrapper.value) {
+    scrollPosition.value = {
+      x: canvasWrapper.value.scrollLeft,
+      y: canvasWrapper.value.scrollTop
+    }
+  }
 }
 
 function fitToScreen() {
