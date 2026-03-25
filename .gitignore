@@ -67,3 +67,5 @@ test_upload.png
 
 # Frontend build output (after restructure)
 src/frontend/dist/
+
+app/
