@@ -1,27 +1,35 @@
 <template>
-  <nav class="top-nav glass">
+  <nav class="top-nav glass" role="navigation" aria-label="主导航">
     <div class="logo-container">
-      <span class="material-icons logo-icon">psychology</span>
+      <span class="material-icons logo-icon" aria-hidden="true">psychology</span>
       <h1>大模型提示词管理与测试工具</h1>
     </div>
-    <div class="service-status-container">
-      <div class="status-item" :class="llmStatus" :title="llmMessage">
-        <span class="status-dot"></span>
+    <div class="service-status-container" role="status" aria-live="polite" aria-label="服务状态">
+      <div class="status-item" :class="llmStatus" :title="llmMessage" :aria-label="'LLM状态: ' + llmMessage">
+        <span class="status-dot" aria-hidden="true"></span>
         <span class="status-label">LLM</span>
       </div>
-      <div v-if="trueno3Configured" class="status-item" :class="trueno3Status" :title="trueno3Message">
-        <span class="status-dot"></span>
+      <div v-if="trueno3Configured" class="status-item" :class="trueno3Status" :title="trueno3Message" :aria-label="'Trueno3状态: ' + trueno3Message">
+        <span class="status-dot" aria-hidden="true"></span>
         <span class="status-label">Trueno3</span>
       </div>
     </div>
-    <div class="nav-icons">
-      <span class="material-icons nav-icon" @click="toggleTheme" title="切换主题">
-        {{ theme === 'dark' ? 'dark_mode' : 'light_mode' }}
-      </span>
-      <span class="material-icons nav-icon">search</span>
-      <span class="material-icons nav-icon">notifications</span>
-      <span class="material-icons nav-icon settings" @click="openSettings" title="系统设置">settings</span>
-      <span class="material-icons nav-icon user-avatar">account_circle</span>
+    <div class="nav-icons" role="toolbar" aria-label="工具栏">
+      <button class="nav-icon-btn" @click="toggleTheme" :title="'切换主题 (当前: ' + (theme === 'dark' ? '暗色' : '亮色') + ')'" :aria-label="'切换主题 (当前: ' + (theme === 'dark' ? '暗色' : '亮色') + ')'">
+        <span class="material-icons" aria-hidden="true">{{ theme === 'dark' ? 'dark_mode' : 'light_mode' }}</span>
+      </button>
+      <button class="nav-icon-btn" title="搜索" aria-label="搜索">
+        <span class="material-icons" aria-hidden="true">search</span>
+      </button>
+      <button class="nav-icon-btn" title="通知" aria-label="通知">
+        <span class="material-icons" aria-hidden="true">notifications</span>
+      </button>
+      <button class="nav-icon-btn settings" @click="openSettings" title="系统设置" aria-label="系统设置">
+        <span class="material-icons" aria-hidden="true">settings</span>
+      </button>
+      <button class="nav-icon-btn user-avatar" title="用户" aria-label="用户菜单">
+        <span class="material-icons" aria-hidden="true">account_circle</span>
+      </button>
     </div>
   </nav>
 </template>
@@ -111,17 +119,32 @@ onMounted(() => {
 .nav-icons {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 8px;
   color: var(--text-secondary);
 }
 
-.nav-icon {
+.nav-icon-btn {
+  background: transparent;
+  border: none;
+  padding: 8px;
   cursor: pointer;
-  transition: color 0.2s;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  min-width: 44px;
+  min-height: 44px;
 }
 
-.nav-icon:hover {
+.nav-icon-btn:hover {
   color: var(--primary-color);
+  background: var(--hover-bg);
+}
+
+.nav-icon-btn .material-icons {
+  font-size: 24px;
 }
 
 .service-status-container {

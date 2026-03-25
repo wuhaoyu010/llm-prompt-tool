@@ -1,44 +1,48 @@
 <template>
-  <aside class="sidebar glass" :class="{ collapsed }">
+  <aside class="sidebar glass" :class="{ collapsed }" role="navigation" :aria-label="collapsed ? '缺陷列表导航 (已折叠)' : '缺陷列表导航'">
     <div class="sidebar-header">
-      <h3>缺陷列表</h3>
-      <button class="toggle-sidebar-btn" @click="collapsed = !collapsed">
-        <span class="material-icons">{{ collapseIcon }}</span>
+      <h3 id="sidebar-title">缺陷列表</h3>
+      <button class="toggle-sidebar-btn" @click="collapsed = !collapsed" :aria-expanded="!collapsed" :aria-controls="'defect-nav'" :aria-label="collapsed ? '展开侧边栏' : '折叠侧边栏'">
+        <span class="material-icons" aria-hidden="true">{{ collapseIcon }}</span>
       </button>
     </div>
-    
+
     <div v-if="!collapsed" class="sidebar-search">
-      <span class="material-icons">search</span>
-      <input 
-        type="text" 
-        v-model="searchQuery" 
+      <label for="defect-search" class="visually-hidden">搜索缺陷</label>
+      <span class="material-icons" aria-hidden="true">search</span>
+      <input
+        id="defect-search"
+        type="text"
+        v-model="searchQuery"
         placeholder="搜索缺陷名称..."
         @input="handleSearch"
+        aria-label="搜索缺陷名称"
       />
     </div>
-    
-    <nav v-if="!collapsed" class="defect-list">
-      <a 
-        v-for="defect in filteredDefects" 
+
+    <nav v-if="!collapsed" id="defect-nav" class="defect-list" aria-labelledby="sidebar-title">
+      <a
+        v-for="defect in filteredDefects"
         :key="defect.id"
         href="#"
         :class="{ active: defect.id === currentDefectId }"
         @click.prevent="selectDefect(defect.id)"
+        :aria-current="defect.id === currentDefectId ? 'page' : undefined"
       >
         {{ defect.name }}
       </a>
     </nav>
-    
+
     <div v-if="!collapsed" class="sidebar-footer">
       <div class="sidebar-actions">
-        <button class="btn btn-secondary btn-sm" title="批量导入缺陷定义" @click="uiStore.openImportDefectsModal()">
-          <span class="material-icons">upload_file</span>
+        <button class="btn btn-secondary btn-sm" title="批量导入缺陷定义" @click="uiStore.openImportDefectsModal()" aria-label="批量导入缺陷定义">
+          <span class="material-icons" aria-hidden="true">upload_file</span>
         </button>
-        <button class="btn btn-secondary btn-sm" title="导出全部" @click="$emit('export')">
-          <span class="material-icons">download</span>
+        <button class="btn btn-secondary btn-sm" title="导出全部" @click="$emit('export')" aria-label="导出全部缺陷定义">
+          <span class="material-icons" aria-hidden="true">download</span>
         </button>
       </div>
-      <button class="btn btn-primary full-width" @click="$emit('add')">
+      <button class="btn btn-primary full-width" @click="$emit('add')" aria-label="添加新的缺陷类别">
         + 添加新类别
       </button>
     </div>

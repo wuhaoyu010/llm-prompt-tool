@@ -861,7 +861,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   position: relative;
-  background: #0f172a;
+  background: var(--bg-color);
   padding: 20px;
 }
 

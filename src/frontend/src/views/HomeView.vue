@@ -1298,40 +1298,40 @@ async function fetchLLMConfig() {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #6B7280;
+  background: var(--muted-color);
 }
 
 .llm-status-indicator .status-text {
-  color: #6B7280;
+  color: var(--muted-color);
 }
 
 .llm-status-indicator.online .status-dot {
-  background: #10B981;
+  background: var(--online-color);
 }
 
 .llm-status-indicator.online .status-text {
-  color: #10B981;
+  color: var(--online-color);
 }
 
 .llm-status-indicator.offline .status-dot {
-  background: #EF4444;
+  background: var(--offline-color);
 }
 
 .llm-status-indicator.offline .status-text {
-  color: #EF4444;
+  color: var(--offline-color);
 }
 
 .llm-status-indicator.checking .status-dot {
-  background: #F59E0B;
+  background: var(--checking-color);
   animation: pulse 1s infinite;
 }
 
 .llm-status-indicator.checking .status-text {
-  color: #F59E0B;
+  color: var(--checking-color);
 }
 
 .llm-status-indicator.unknown .status-dot {
-  background: #6B7280;
+  background: var(--muted-color);
 }
 
 @keyframes pulse {
@@ -1369,7 +1369,7 @@ async function fetchLLMConfig() {
 
 .version-tag.base-version {
   background: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
+  color: var(--success-color);
 }
 
 .inference-comparison {
@@ -1392,12 +1392,12 @@ async function fetchLLMConfig() {
 
 .version-label.version-a {
   background: rgba(99, 102, 241, 0.2);
-  color: #6366F1;
+  color: var(--primary-hover);
 }
 
 .version-label.version-b {
   background: rgba(16, 185, 129, 0.2);
-  color: #10B981;
+  color: var(--success-color);
 }
 
 .comparison-content {
@@ -1414,11 +1414,11 @@ async function fetchLLMConfig() {
 }
 
 .comparison-panel.version-a-panel {
-  border-top: 3px solid #6366F1;
+  border-top: 3px solid var(--primary-hover);
 }
 
 .comparison-panel.version-b-panel {
-  border-top: 3px solid #10B981;
+  border-top: 3px solid var(--success-color);
 }
 
 .comparison-panel .panel-header {
@@ -1431,11 +1431,11 @@ async function fetchLLMConfig() {
 }
 
 .version-a-panel .panel-header {
-  color: #6366F1;
+  color: var(--primary-hover);
 }
 
 .version-b-panel .panel-header {
-  color: #10B981;
+  color: var(--success-color);
 }
 
 .comparison-panel .panel-body {
@@ -1511,22 +1511,22 @@ async function fetchLLMConfig() {
 
 .result-item .result-status.y {
   background: rgba(16, 185, 129, 0.2);
-  color: #10B981;
+  color: var(--success-color);
 }
 
 .result-item .result-status.n {
   background: rgba(239, 68, 68, 0.2);
-  color: #EF4444;
+  color: var(--error-color);
 }
 
 .result-item .result-status.u {
   background: rgba(245, 158, 11, 0.2);
-  color: #F59E0B;
+  color: var(--warning-color);
 }
 
 .result-item .result-status.e {
   background: rgba(107, 114, 128, 0.2);
-  color: #6B7280;
+  color: var(--muted-color);
 }
 
 .result-item .result-reason {
@@ -1643,30 +1643,30 @@ async function fetchLLMConfig() {
 }
 
 .connection-status.online .status-dot {
-  background: #4caf50;
-  box-shadow: 0 0 4px #4caf50;
+  background: var(--success-color);
+  box-shadow: 0 0 4px var(--success-color);
 }
 
 .connection-status.online {
-  color: #4caf50;
+  color: var(--success-color);
 }
 
 .connection-status.offline .status-dot {
-  background: #f44336;
-  box-shadow: 0 0 4px #f44336;
+  background: var(--error-color);
+  box-shadow: 0 0 4px var(--error-color);
 }
 
 .connection-status.offline {
-  color: #f44336;
+  color: var(--error-color);
 }
 
 .connection-status.checking .status-dot {
-  background: #ff9800;
+  background: var(--warning-color);
   animation: pulse 1s infinite;
 }
 
 .connection-status.checking {
-  color: #ff9800;
+  color: var(--warning-color);
 }
 
 @keyframes pulse {
@@ -1799,9 +1799,9 @@ async function fetchLLMConfig() {
   overflow: hidden;
 }
 
-.llm-result-item.result-correct { border-left: 3px solid #4caf50; }
-.llm-result-item.result-wrong { border-left: 3px solid #f44336; }
-.llm-result-item.result-error { border-left: 3px solid #ff9800; }
+.llm-result-item.result-correct { border-left: 3px solid var(--success-color); }
+.llm-result-item.result-wrong { border-left: 3px solid var(--error-color); }
+.llm-result-item.result-error { border-left: 3px solid var(--warning-color); }
 
 .result-header {
   display: flex;
@@ -1824,13 +1824,13 @@ async function fetchLLMConfig() {
 }
 
 .result-type.positive {
-  background: rgba(76, 175, 80, 0.2);
-  color: #4caf50;
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--success-color);
 }
 
 .result-type.negative {
-  background: rgba(33, 150, 243, 0.2);
-  color: #2196f3;
+  background: rgba(59, 130, 246, 0.2);
+  color: var(--info-color);
 }
 
 .result-expected,
@@ -1848,18 +1848,18 @@ async function fetchLLMConfig() {
 }
 
 .result-status.correct {
-  background: rgba(76, 175, 80, 0.2);
-  color: #4caf50;
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--success-color);
 }
 
 .result-status.wrong {
-  background: rgba(244, 67, 54, 0.2);
-  color: #f44336;
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--error-color);
 }
 
 .result-status.error {
-  background: rgba(255, 152, 0, 0.2);
-  color: #ff9800;
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--warning-color);
 }
 
 .result-boxes {
@@ -1894,13 +1894,13 @@ async function fetchLLMConfig() {
 }
 
 .box-status.defect {
-  background: rgba(244, 67, 54, 0.2);
-  color: #f44336;
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--error-color);
 }
 
 .box-status.normal {
-  background: rgba(76, 175, 80, 0.2);
-  color: #4caf50;
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--success-color);
 }
 
 .box-reason {

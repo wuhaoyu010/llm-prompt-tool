@@ -248,7 +248,7 @@ function close() {
 }
 
 .hint-text.warning {
-  color: #f59e0b;
+  color: var(--warning-color);
   margin-top: 8px;
 }
 

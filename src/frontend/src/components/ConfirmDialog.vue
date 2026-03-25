@@ -130,15 +130,15 @@ function handleCancel() {
 }
 
 .confirm-dialog-icon.warning {
-  color: #f59e0b;
+  color: var(--warning-color);
 }
 
 .confirm-dialog-icon.danger {
-  color: #ef4444;
+  color: var(--error-color);
 }
 
 .confirm-dialog-icon.info {
-  color: #3b82f6;
+  color: var(--info-color);
 }
 
 .confirm-dialog-header h3 {

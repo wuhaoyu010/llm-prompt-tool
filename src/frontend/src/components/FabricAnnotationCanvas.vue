@@ -986,7 +986,7 @@ onUnmounted(() => {
   justify-content: center;
   position: relative;
   outline: none;
-  background: #0f172a;
+  background: var(--bg-color);
 }
 
 .canvas-wrapper:focus {

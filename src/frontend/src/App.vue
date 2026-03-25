@@ -1,9 +1,11 @@
 <template>
   <div class="app-container">
+    <!-- 无障碍：跳转到主内容 -->
+    <a href="#main-content" class="skip-link">跳转到主内容</a>
     <TopNav />
     <div class="main-container">
       <Sidebar @import="handleImport" @export="handleExport" @add="handleAddDefect" />
-      <main class="main-content">
+      <main id="main-content" class="main-content" role="main">
         <router-view />
       </main>
     </div>
