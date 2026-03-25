@@ -34,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
         batchSelectedIds: [],  // 批量选中的测试用例ID
         batchImportFiles: [],  // 批量导入的文件列表
         boxLabels: {},  // 标注框标签 { boxId: label }
-<<<<<<< HEAD
         // 暂存区相关
         annotationCache: {},  // 暂存区 { testCaseId: { boxes, history, historyIndex, isDirty, lastSaved } }
         autoSaveInterval: 60000,  // 自动保存间隔(ms)，默认1分钟
@@ -113,14 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
             state.isLoading = true;
             Loading._lastMessage = message;
 
-=======
-    };
-    
-    // --- Loading 管理 ---
-    const Loading = {
-        show(message = '加载中...') {
-            state.isLoading = true;
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             let overlay = document.getElementById('loading-overlay');
             if (!overlay) {
                 overlay = document.createElement('div');
@@ -132,14 +123,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
                 document.body.appendChild(overlay);
-<<<<<<< HEAD
             } else {
                 overlay.querySelector('.loading-message').textContent = message;
             }
-=======
-            }
-            overlay.querySelector('.loading-message').textContent = message;
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             overlay.style.display = 'flex';
         },
         
@@ -369,64 +355,14 @@ document.addEventListener('DOMContentLoaded', () => {
         annotationCanvas: document.getElementById('annotation-canvas'),
         uploadPlaceholder: document.getElementById('upload-placeholder'),
         imageUploadInput: document.getElementById('image-upload-input'),
-<<<<<<< HEAD
         boxContextMenu: document.getElementById('box-context-menu'),
-=======
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
-        
-        testCaseList: document.getElementById('test-case-list'),
-        drawBoxBtn: document.getElementById('draw-box-btn'),
-        undoBtn: document.getElementById('undo-btn'),
-        addTestCaseBtn: document.getElementById('add-test-case-btn'),
-        updateAnnotationBtn: document.getElementById('update-annotation-btn'),
-        clearCanvasBtn: document.getElementById('clear-canvas-btn'),
-
-        tabs: document.querySelectorAll('.tab-link'),
-        tabContents: document.querySelectorAll('.tab-content'),
-        comparisonContainer: document.getElementById('comparison-container'),
-        historyTableBody: document.querySelector('#history-table tbody'),
-        
-        modalBackdrop: document.getElementById('modal-backdrop'),
-        globalTemplateModal: document.getElementById('global-template-modal'),
-        addDefectModal: document.getElementById('add-defect-modal'),
-        importDefectsModal: document.getElementById('import-defects-modal'),
-        settingsModal: document.getElementById('settings-modal'),
-
-        addDefectBtn: document.getElementById('add-defect-btn'),
-        importDefectsBtn: document.getElementById('import-defects-btn'),
-        exportDefectsBtn: document.getElementById('export-defects-btn'),
-        editGlobalTemplateBtn: document.getElementById('edit-global-template-btn'),
-        runRegressionBtn: document.getElementById('run-regression-btn'),
-        runComparisonBtn: document.getElementById('run-comparison-btn'),
-        themeToggle: document.getElementById('theme-toggle'),
-        settingsBtn: document.getElementById('settings-btn'),
-        sidebar: document.getElementById('sidebar'),
-        toggleSidebarBtn: document.getElementById('toggle-sidebar-btn'),
-
-        // 新的缩略图容器
-        thumbnailContainer: document.getElementById('thumbnail-container'),
-        thumbnailScrollWrapper: document.getElementById('thumbnail-scroll-wrapper'),
-
-        // 批量操作相关
-        batchImportBtn: document.getElementById('batch-import-btn'),
-        batchImportModal: document.getElementById('batch-import-modal'),
-        selectAllThumbnails: document.getElementById('select-all-thumbnails'),
-        batchActions: document.getElementById('batch-actions'),
-        batchDeleteBtn: document.getElementById('batch-delete-btn'),
-        batchSetPositiveBtn: document.getElementById('batch-set-positive-btn'),
-        batchSetNegativeBtn: document.getElementById('batch-set-negative-btn'),
-        batchAutoAnnotateBtn: document.getElementById('batch-auto-annotate-btn'),
-        batchDefectAutoAnnotateBtn: document.getElementById('batch-defect-auto-annotate-btn'),
-        batchDefectAnnotateModal: document.getElementById('batch-defect-annotate-modal'),
-<<<<<<< HEAD
-        singleDefectAnnotateModal: document.getElementById('single-defect-annotate-modal'),
-=======
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
         shortcutToggle: document.getElementById('shortcut-toggle'),
         shortcutsPanel: document.getElementById('shortcuts-panel'),
         boxLabelEditor: document.getElementById('box-label-editor'),
         boxLabelInput: document.getElementById('box-label-input'),
         boxLabelSave: document.getElementById('box-label-save'),
+        comparisonContainer: document.getElementById('comparison-container'),
+        historyTableBody: document.querySelector('#history-table tbody'),
     };
 
     // --- API 封装（带错误处理）---
@@ -708,7 +644,6 @@ document.addEventListener('DOMContentLoaded', () => {
         init() {
             ConfirmDialog.init();
             this.initTheme();
-            this.initCanvas();
             this.bindEventListeners();
             this.loadDefects();
             this.initModelSelector();
@@ -745,13 +680,13 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         showInitialState() {
-            dom.defectTitle.textContent = '请选择一个缺陷类别';
-            dom.defectVersionTag.textContent = '';
-            dom.editorGrid.innerHTML = '<p class="placeholder-text">从左侧选择一个缺陷类别以开始。</p>';
+            if (dom.defectTitle) dom.defectTitle.textContent = '请选择一个缺陷类别';
+            if (dom.defectVersionTag) dom.defectVersionTag.textContent = '';
+            if (dom.editorGrid) dom.editorGrid.innerHTML = '<p class="placeholder-text">从左侧选择一个缺陷类别以开始。</p>';
             if (dom.testCaseList) dom.testCaseList.innerHTML = '';
-            dom.versionDropdown.innerHTML = '';
-            dom.comparisonContainer.innerHTML = '';
-            dom.historyTableBody.innerHTML = '<tr><td colspan="4">选择一个缺陷类别以查看历史记录。</td></tr>';
+            if (dom.versionDropdown) dom.versionDropdown.innerHTML = '';
+            if (dom.comparisonContainer) dom.comparisonContainer.innerHTML = '';
+            if (dom.historyTableBody) dom.historyTableBody.innerHTML = '<tr><td colspan="5">选择一个缺陷类别以查看历史记录。</td></tr>';
             this.clearCanvas();
         },
 
@@ -874,7 +809,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const indicator = document.getElementById('llm-status-indicator');
             if (!indicator) return;
 
-<<<<<<< HEAD
             try {
                 const result = await fetch('/api/llm_health').then(r => r.json());
                 const newClass = result.status === 'online' ? 'online' : 'offline';
@@ -901,31 +835,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (statusText.textContent !== '检查失败') {
                     statusText.textContent = '检查失败';
                 }
-=======
-            const statusDot = indicator.querySelector('.status-dot');
-            const statusText = indicator.querySelector('.status-text');
-
-            // 设置检查中状态
-            indicator.className = 'llm-status-indicator checking';
-            statusText.textContent = '检查中...';
-
-            try {
-                const result = await fetch('/api/llm_health').then(r => r.json());
-
-                if (result.status === 'online') {
-                    indicator.className = 'llm-status-indicator online';
-                    statusText.textContent = result.message;
-                    indicator.title = result.details;
-                } else {
-                    indicator.className = 'llm-status-indicator offline';
-                    statusText.textContent = result.message;
-                    indicator.title = result.details;
-                }
-            } catch (error) {
-                indicator.className = 'llm-status-indicator offline';
-                statusText.textContent = '检查失败';
-                indicator.title = error.message;
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             }
         },
 
@@ -1179,7 +1088,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async loadTestCase(testCaseId) {
             if (state.currentTestCaseId === testCaseId) return;
-<<<<<<< HEAD
 
             // 自动保存当前图片到暂存区（无弹框，类似 CVAT）
             if (state.currentTestCaseId) {
@@ -1194,24 +1102,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.test-case-item img').forEach(img => {
                 img.classList.toggle('selected', img.dataset.id == testCaseId);
             });
-=======
-            state.currentTestCaseId = testCaseId;
-            state.currentImage.file = null;
-
-            // 更新旧的选择器
-            document.querySelectorAll('.test-case-item img').forEach(img => {
-                img.classList.toggle('selected', img.dataset.id == testCaseId);
-            });
-            
-            // 更新新的缩略图选中状态
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             document.querySelectorAll('.thumbnail-item').forEach(item => {
                 item.classList.toggle('selected', item.dataset.id == testCaseId);
                 if (item.dataset.id == testCaseId) {
                     item.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                 }
             });
-<<<<<<< HEAD
 
             // 尝试从暂存区加载
             const cache = state.annotationCache[testCaseId];
@@ -1228,15 +1124,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 启动自动保存定时器
             this.startAutoSaveTimer();
-=======
-            
-            const testCase = state.testCases.find(tc => tc.id == testCaseId);
-            if (testCase) {
-                await this.loadImageOnCanvas(`/${testCase.filepath}`);
-                // loadImageOnCanvas 是 Promise，await 后图片已加载完成，直接渲染标注框
-                this.renderBoxesOnCanvas(testCaseId);
-            }
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
         },
         
         // 渲染标注框到画布
@@ -1283,7 +1170,6 @@ document.addEventListener('DOMContentLoaded', () => {
             state.fabricCanvas.renderAll();
         },
 
-<<<<<<< HEAD
         // 保存当前标注到暂存区
         saveToCache(testCaseId) {
             if (!state.fabricCanvas || !testCaseId) return;
@@ -1379,132 +1265,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
-=======
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
-        // --- 画布与标注 ---
-        initCanvas() {
-            const canvasEl = dom.annotationCanvas;
-            const wrapper = dom.canvasWrapper;
-
-            const setCanvasSize = () => {
-                canvasEl.width = wrapper.clientWidth;
-                canvasEl.height = wrapper.clientHeight;
-                if (state.fabricCanvas) {
-                    state.fabricCanvas.setWidth(wrapper.clientWidth);
-                    state.fabricCanvas.setHeight(wrapper.clientHeight);
-                    state.fabricCanvas.renderAll();
-                }
-            };
-
-            // 防抖处理resize事件，避免频繁重绘导致闪屏
-            let resizeTimeout = null;
-            const debouncedSetCanvasSize = () => {
-                if (resizeTimeout) clearTimeout(resizeTimeout);
-                resizeTimeout = setTimeout(setCanvasSize, 100);
-            };
-
-            state.fabricCanvas = new fabric.Canvas(canvasEl, {
-                backgroundColor: 'transparent',
-            });
-
-            setCanvasSize();
-            window.addEventListener('resize', debouncedSetCanvasSize);
-            
-            // 矩形绘制模式变量
-            let isDrawingRect = false;
-            let rectStartPoint = null;
-            let tempRect = null;
-            
-            // 鼠标按下 - 开始绘制
-            state.fabricCanvas.on('mouse:down', (e) => {
-                // 平移模式和绘制模式互斥
-                if (!state.isDrawingMode || state.isPanningMode || !state.currentImage.element) return;
-                
-                isDrawingRect = true;
-                const pointer = state.fabricCanvas.getPointer(e.e);
-                rectStartPoint = pointer;
-                
-                // 创建临时矩形（实时预览）
-                tempRect = new fabric.Rect({
-                    left: pointer.x,
-                    top: pointer.y,
-                    width: 0,
-                    height: 0,
-                    fill: 'rgba(66, 133, 244, 0.2)',
-                    stroke: '#4285F4',
-                    strokeWidth: 2,
-                    selectable: false,
-                    evented: false,
-                });
-                state.fabricCanvas.add(tempRect);
-            });
-            
-            // 鼠标移动 - 实时更新矩形大小
-            state.fabricCanvas.on('mouse:move', (e) => {
-                if (!isDrawingRect || !tempRect) return;
-                
-                const pointer = state.fabricCanvas.getPointer(e.e);
-                const width = Math.abs(pointer.x - rectStartPoint.x);
-                const height = Math.abs(pointer.y - rectStartPoint.y);
-                const left = Math.min(pointer.x, rectStartPoint.x);
-                const top = Math.min(pointer.y, rectStartPoint.y);
-                
-                tempRect.set({
-                    left: left,
-                    top: top,
-                    width: width,
-                    height: height,
-                });
-                state.fabricCanvas.renderAll();
-            });
-            
-            // 鼠标释放 - 完成绘制
-            state.fabricCanvas.on('mouse:up', async (e) => {
-                if (!isDrawingRect || !tempRect) return;
-
-                isDrawingRect = false;
-
-                // 检查矩形大小，太小的不保存
-                if (tempRect.width < 10 || tempRect.height < 10) {
-                    state.fabricCanvas.remove(tempRect);
-                    tempRect = null;
-                    return;
-                }
-
-                // 将临时矩形转换为正式的标注框
-                const finalRect = new fabric.Rect({
-                    left: tempRect.left,
-                    top: tempRect.top,
-                    width: tempRect.width,
-                    height: tempRect.height,
-                    fill: 'rgba(234, 67, 53, 0.2)',
-                    stroke: '#ea4335',
-                    strokeWidth: 2,
-                    selectable: true,
-                    evented: true,
-                    hasControls: true,
-                    hasBorders: true,
-                });
-
-                state.fabricCanvas.remove(tempRect);
-                state.fabricCanvas.add(finalRect);
-                tempRect = null;
-
-                // 显示成功提示
-                Notification.success('标注框已添加', '标注成功', 2000);
-
-<<<<<<< HEAD
-                // 自动保存到暂存区（类似 CVAT）
-                if (state.currentTestCaseId) {
-                    this.saveToCache(state.currentTestCaseId);
-=======
-                // 自动保存标注到当前测试用例
-                if (state.currentTestCaseId) {
-                    await this.autoSaveAnnotation();
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
-                }
-            });
-            
+        // 画布事件绑定
+        bindCanvasEvents() {
             // 双击删除标注框
             state.fabricCanvas.on('mouse:dblclick', async (e) => {
                 const target = e.target;
@@ -1512,26 +1274,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.fabricCanvas.remove(target);
                     Notification.success('标注框已删除', '删除成功', 2000);
 
-<<<<<<< HEAD
                     // 自动保存到暂存区（类似 CVAT）
                     if (state.currentTestCaseId) {
                         this.saveToCache(state.currentTestCaseId);
-=======
-                    // 自动保存标注到当前测试用例
-                    if (state.currentTestCaseId) {
-                        await this.autoSaveAnnotation();
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                     }
                 }
             });
             
             // 选中时的样式
             state.fabricCanvas.on('selection:created', (e) => {
-<<<<<<< HEAD
                 const target = e.selected && e.selected[0];
-=======
-                const target = e.selected[0];
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                 if (target && target.type === 'rect') {
                     target.set({
                         stroke: '#fbbc05',
@@ -1543,11 +1295,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // 取消选中时恢复样式
             state.fabricCanvas.on('selection:cleared', (e) => {
-<<<<<<< HEAD
                 const target = e.deselected && e.deselected[0];
-=======
-                const target = e.deselected[0];
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                 if (target && target.type === 'rect') {
                     target.set({
                         stroke: '#ea4335',
@@ -1571,7 +1319,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 e.stopPropagation();
 
-<<<<<<< HEAD
                 const delta = e.deltaY > 0 ? 0.9 : 1.1;
                 const newZoom = Math.max(0.5, Math.min(5, state.canvasZoom * delta));
                 state.canvasZoom = newZoom;
@@ -1581,28 +1328,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.fabricCanvas.zoomToPoint({ x: center.left, y: center.top }, newZoom);
 
                 this.updateZoomIndicator();
-=======
-                const delta = e.deltaY > 0 ? 0.9 : 1.1;  // 缩放因子
-                const newZoom = Math.max(0.5, Math.min(5, state.canvasZoom * delta));
-                state.canvasZoom = newZoom;
-
-                this.applyCanvasTransform();
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             }, { passive: false });
 
             // --- 画布平移功能（中键或空格+左键）---
             wrapper.addEventListener('mousedown', (e) => {
-<<<<<<< HEAD
                 if (e.button === 1 || (e.button === 0 && state.isPanningMode)) {
                     e.preventDefault();
                     state.lastPanPoint = { x: e.clientX, y: e.clientY };
                     state.isPanning = true;
-=======
-                // 中键平移 或 空格+左键平移
-                if (e.button === 1 || (e.button === 0 && state.isPanningMode)) {
-                    e.preventDefault();
-                    state.lastPanPoint = { x: e.clientX, y: e.clientY };
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                     wrapper.style.cursor = 'grabbing';
                 }
             });
@@ -1613,42 +1346,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dx = e.clientX - state.lastPanPoint.x;
                 const dy = e.clientY - state.lastPanPoint.y;
 
-<<<<<<< HEAD
                 // 使用 Fabric.js 的 viewportTransform 实现统一平移
                 const vpt = state.fabricCanvas.viewportTransform;
                 vpt[4] += dx;
                 vpt[5] += dy;
 
                 state.lastPanPoint = { x: e.clientX, y: e.clientY };
-=======
-                state.canvasPan.x += dx;
-                state.canvasPan.y += dy;
-
-                state.lastPanPoint = { x: e.clientX, y: e.clientY };
-                this.applyCanvasTransform();
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             });
 
             wrapper.addEventListener('mouseup', (e) => {
                 if (state.lastPanPoint) {
                     state.lastPanPoint = null;
-<<<<<<< HEAD
                     state.isPanning = false;
                     state.fabricCanvas.requestRenderAll();  // 仅在结束时渲染一次
-=======
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
-                    wrapper.style.cursor = state.isPanningMode ? 'grab' : 'default';
-                }
-            });
-
-            wrapper.addEventListener('mouseleave', (e) => {
-                if (state.lastPanPoint) {
-                    state.lastPanPoint = null;
-<<<<<<< HEAD
-                    state.isPanning = false;
-                    state.fabricCanvas.requestRenderAll();  // 仅在结束时渲染一次
-=======
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                     wrapper.style.cursor = 'default';
                 }
             });
@@ -1662,7 +1372,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 计算图片在画布中的居中位置
             const wrapper = dom.canvasWrapper;
-<<<<<<< HEAD
 
             // 使用 Fabric.js viewportTransform 统一处理缩放和平移
             const baseScale = Math.min(wrapper.clientWidth / img.width, wrapper.clientHeight / img.height);
@@ -1675,25 +1384,6 @@ document.addEventListener('DOMContentLoaded', () => {
             vpt[5] = state.canvasPan.y + (wrapper.clientHeight - img.height * baseScale * state.canvasZoom) / 2;
 
             canvas.requestRenderAll();
-=======
-            const imgWidth = img.width * img.scaleX;
-            const imgHeight = img.height * img.scaleY;
-
-            // 应用缩放和平移
-            img.scaleX = img.scaleX / img.scaleX * img.width * state.canvasZoom;
-            img.scaleY = img.scaleY / img.scaleY * img.height * state.canvasZoom;
-
-            // 重置缩放基准
-            const baseScale = Math.min(wrapper.clientWidth / img.width, wrapper.clientHeight / img.height);
-            img.scaleX = baseScale * state.canvasZoom;
-            img.scaleY = baseScale * state.canvasZoom;
-
-            // 居中位置 + 平移偏移
-            img.left = (wrapper.clientWidth - img.width * img.scaleX) / 2 + state.canvasPan.x;
-            img.top = (wrapper.clientHeight - img.height * img.scaleY) / 2 + state.canvasPan.y;
-
-            canvas.renderAll();
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
 
             // 更新缩放指示器
             this.updateZoomIndicator();
@@ -1703,7 +1393,6 @@ document.addEventListener('DOMContentLoaded', () => {
         resetCanvasView() {
             state.canvasZoom = 1;
             state.canvasPan = { x: 0, y: 0 };
-<<<<<<< HEAD
             // 重置 viewportTransform 到默认状态
             const canvas = state.fabricCanvas;
             if (canvas) {
@@ -1711,9 +1400,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 canvas.requestRenderAll();
             }
             this.updateZoomIndicator();
-=======
-            this.applyCanvasTransform();
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
         },
 
         // 更新缩放指示器
@@ -1776,6 +1462,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         clearCanvas(skipConfirm = false) {
             return new Promise(async (resolve) => {
+                // 检查 fabricCanvas 是否已初始化
+                if (!state.fabricCanvas) {
+                    resolve(true);
+                    return;
+                }
                 const hasContent = state.fabricCanvas.getObjects().length > 0 || state.currentImage.file;
                 if (hasContent && !skipConfirm) {
                     const confirmed = await ConfirmDialog.ask('确定要清空画布吗？未保存的标注将丢失。', '清空画布');
@@ -1844,7 +1535,6 @@ document.addEventListener('DOMContentLoaded', () => {
             dom.drawBoxBtn.classList.remove('active');
         },
         
-<<<<<<< HEAD
         // 记录操作到历史
         recordToHistory(action, data) {
             // 撤销后新操作会清空 redo 栈
@@ -1945,12 +1635,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 state.fabricCanvas.remove(lastRect);
                 Notification.success('已删除最后一个标注框', '删除成功', 2000);
-=======
-        undoLastBox() {
-            const objects = state.fabricCanvas.getObjects('rect');
-            if (objects.length > 0) {
-                state.fabricCanvas.remove(objects[objects.length - 1]);
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             }
         },
 
@@ -2023,11 +1707,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 自动保存
             if (state.currentTestCaseId) {
-<<<<<<< HEAD
                 await this.autoSaveAnnotation(true);  // 粘贴后保存需要更新缩略图
-=======
-                await this.autoSaveAnnotation();
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             }
         },
 
@@ -2047,7 +1727,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     else this.startDrawingMode();
                 }
                 // Ctrl/Cmd + Z: 撤销
-<<<<<<< HEAD
                 if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
                     e.preventDefault();
                     this.undo();
@@ -2056,11 +1735,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Z') {
                     e.preventDefault();
                     this.redo();
-=======
-                if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-                    e.preventDefault();
-                    this.undoLastBox();
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                 }
                 // Delete: 删除选中框
                 if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -2068,237 +1742,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (activeObject && activeObject.type === 'rect') {
                         state.fabricCanvas.remove(activeObject);
                         Notification.success('标注框已删除', '删除成功', 2000);
-<<<<<<< HEAD
 
                         // 自动保存到暂存区（类似 CVAT）
                         if (state.currentTestCaseId) {
                             this.saveToCache(state.currentTestCaseId);
                         }
-=======
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
-                    }
-                }
-                // 空格: 切换平移模式
-                if (e.code === 'Space' && !e.ctrlKey && !e.metaKey) {
-                    if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
-                        e.preventDefault();
-                        this.togglePanMode();
-                    }
-                }
-                // Ctrl/Cmd + 0: 重置视图
-                if ((e.ctrlKey || e.metaKey) && e.key === '0') {
-                    e.preventDefault();
-                    this.resetCanvasView();
-                    Notification.success('视图已重置', '重置成功', 2000);
-                }
-                // Ctrl/Cmd + C: 复制选中框
-                if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-                    const activeObject = state.fabricCanvas.getActiveObject();
-                    if (activeObject && activeObject.type === 'rect') {
-                        state.clipboardBox = {
-                            left: activeObject.left,
-                            top: activeObject.top,
-                            width: activeObject.width,
-                            height: activeObject.height
-                        };
-                        Notification.success('标注框已复制', '复制成功', 2000);
-                    }
-                }
-                // Ctrl/Cmd + V: 粘贴标注框
-                if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-                    if (state.clipboardBox) {
-                        const newRect = new fabric.Rect({
-                            left: state.clipboardBox.left + 20,
-                            top: state.clipboardBox.top + 20,
-                            width: state.clipboardBox.width,
-                            height: state.clipboardBox.height,
-                            fill: 'rgba(234, 67, 53, 0.2)',
-                            stroke: '#ea4335',
-                            strokeWidth: 2,
-                            selectable: true,
-                            evented: true,
-                            hasControls: true,
-                            hasBorders: true,
-                        });
-                        state.fabricCanvas.add(newRect);
-                        state.fabricCanvas.setActiveObject(newRect);
-                        Notification.success('标注框已粘贴', '粘贴成功', 2000);
-
-                        // 自动保存
-                        if (state.currentTestCaseId) {
-                            this.autoSaveAnnotation();
-                        }
-                    }
-                }
-                // Ctrl/Cmd + Shift + V: 复制当前所有标注框到下一张
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'V') {
-                    e.preventDefault();
-                    // 获取当前所有标注框
-                    const currentBoxes = this.getNormalizedBoxes();
-                    if (currentBoxes.length === 0) {
-                        Notification.warning('当前没有标注框可复制', '提示');
-                        return;
-                    }
-                    // 保存到剪贴板
-                    state.clipboardBoxes = currentBoxes;
-                    // 切换到下一张并自动粘贴
-                    const currentIndex = state.testCases.findIndex(tc => tc.id == state.currentTestCaseId);
-                    if (currentIndex < state.testCases.length - 1) {
-                        Notification.info(`已复制 ${currentBoxes.length} 个标注框，正在切换到下一张...`, '复制标注', 2000);
-                        await this.nextTestCase();
-                        // 延迟粘贴，等待画布加载
-                        setTimeout(() => {
-                            this.pasteBoxesToCurrentImage(state.clipboardBoxes);
-                        }, 500);
-                    } else {
-                        Notification.warning('已经是最后一张图片了', '提示');
-                    }
-                }
-                // ESC: 关闭模态框或退出绘制模式或退出平移模式
-                if (e.key === 'Escape') {
-                    // 优先关闭模态框
-                    if (dom.modalBackdrop.style.display === 'block') {
-                        this.hideModals();
-                    } else if (state.isPanningMode) {
-                        this.togglePanMode();
-                    } else if (state.isDrawingMode) {
-                        this.stopDrawingMode();
-                    }
-                }
-                // D: 上一张测试用例
-                if (e.key === 'd' || e.key === 'D') {
-                    if (!e.ctrlKey && !e.metaKey && !e.altKey) {
-                        e.preventDefault();
-                        this.prevTestCase();
-                    }
-                }
-                // F: 下一张测试用例
-                if (e.key === 'f' || e.key === 'F') {
-                    if (!e.ctrlKey && !e.metaKey && !e.altKey) {
-                        e.preventDefault();
-                        this.nextTestCase();
-                    }
-                }
-                // 左箭头: 上一张
-                if (e.key === 'ArrowLeft') {
-                    if (!e.ctrlKey && !e.metaKey && !e.altKey) {
-                        e.preventDefault();
-                        this.prevTestCase();
-                    }
-                }
-                // 右箭头: 下一张
-                if (e.key === 'ArrowRight') {
-                    if (!e.ctrlKey && !e.metaKey && !e.altKey) {
-                        e.preventDefault();
-                        this.nextTestCase();
-                    }
-                }
-                // Home: 第一张
-                if (e.key === 'Home') {
-                    if (state.testCases.length > 0) {
-                        e.preventDefault();
-                        this.loadTestCase(state.testCases[0].id);
-                    }
-                }
-                // End: 最后一张
-                if (e.key === 'End') {
-                    if (state.testCases.length > 0) {
-                        e.preventDefault();
-                        this.loadTestCase(state.testCases[state.testCases.length - 1].id);
-                    }
-                }
-                // Ctrl/Cmd + A: 全选测试用例
-                if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
-                    // 只在缩略图区域聚焦时生效
-                    if (document.activeElement === document.body ||
-                        dom.thumbnailContainer?.contains(document.activeElement)) {
-                        e.preventDefault();
-                        this.toggleSelectAll();
                     }
                 }
             });
 
-            // 左侧缺陷列表
-            dom.defectList.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (e.target.tagName === 'A') {
-                    this.selectDefect(e.target.dataset.id);
-                }
-            });
-
-            // 搜索过滤
-            if (dom.defectSearch) {
-                dom.defectSearch.addEventListener('input', (e) => {
-                    this.filterDefects(e.target.value);
-                });
+            // 按钮事件绑定
+            if (dom.addTestCaseBtn) {
+                dom.addTestCaseBtn.onclick = () => this.addTestCase();
             }
-
-            // 版本下拉菜单
-            dom.versionDropdown.addEventListener('change', () => {
-                this.selectVersion(dom.versionDropdown.value);
-            });
-
-            // 模块一按钮
-            dom.cancelEditBtn.onclick = () => this.selectVersion(state.currentVersionId);
-            dom.runInferenceBtn.onclick = () => this.runComparisonWithConfirm();
-            dom.saveVersionBtn.onclick = () => this.saveCurrentVersion();
-            dom.publishVersionBtn.onclick = () => this.saveAsNewVersion();
-
-            // 模块二（标注工具）
-            dom.canvasWrapper.onclick = (e) => {
-                if (dom.uploadPlaceholder.style.display !== 'none') {
-                    dom.imageUploadInput.click();
-                }
-            };
-            dom.imageUploadInput.onchange = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    state.currentImage.file = file;
-                    const reader = new FileReader();
-                    reader.onload = (event) => this.loadImageOnCanvas(event.target.result);
-                    reader.readAsDataURL(file);
-                }
-            };
-            dom.canvasWrapper.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dom.canvasWrapper.classList.add('dragover');
-            });
-            dom.canvasWrapper.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dom.canvasWrapper.classList.remove('dragover');
-            });
-            dom.canvasWrapper.addEventListener('drop', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dom.canvasWrapper.classList.remove('dragover');
-                const file = e.dataTransfer.files[0];
-                if (file && file.type.startsWith('image/')) {
-                    state.currentImage.file = file;
-                    const reader = new FileReader();
-                    reader.onload = (event) => this.loadImageOnCanvas(event.target.result);
-                    reader.readAsDataURL(file);
-                }
-            });
-
-            dom.drawBoxBtn.onclick = (e) => {
-                e.stopPropagation();
-                if (state.isDrawingMode) this.stopDrawingMode();
-                else this.startDrawingMode();
-            };
-<<<<<<< HEAD
-            dom.undoBtn.onclick = () => this.undo();
-=======
-            dom.undoBtn.onclick = () => this.undoLastBox();
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
-            dom.addTestCaseBtn.onclick = () => this.addTestCase();
             if (dom.updateAnnotationBtn) {
                 dom.updateAnnotationBtn.onclick = () => this.updateAnnotation();
             }
-            dom.clearCanvasBtn.onclick = () => this.clearCanvas();
+            if (dom.clearCanvasBtn) {
+                dom.clearCanvasBtn.onclick = () => this.clearCanvas();
+            }
 
-<<<<<<< HEAD
             // 自动保存间隔选择
             const autoSaveInterval = document.getElementById('auto-save-interval');
             if (autoSaveInterval) {
@@ -2308,180 +1771,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             }
 
-=======
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
-            // 新增按钮事件
-            const panBtn = document.getElementById('pan-btn');
-            if (panBtn) {
-                panBtn.onclick = () => this.togglePanMode();
-            }
-
-            const resetViewBtn = document.getElementById('reset-view-btn');
-            if (resetViewBtn) {
-                resetViewBtn.onclick = () => this.resetCanvasView();
-            }
-
-            // 旧的 testCaseList 点击事件
-            if (dom.testCaseList) {
-                dom.testCaseList.addEventListener('click', (e) => {
-                    const target = e.target;
-                    if (target.tagName === 'IMG') {
-                        this.loadTestCase(target.dataset.id);
-                    } else if (target.classList.contains('delete-test-case-btn')) {
-                        this.deleteTestCase(target.dataset.id);
-                    }
-                });
-            }
-            
-            // 新的缩略图条点击事件
-            if (dom.thumbnailContainer) {
-                dom.thumbnailContainer.addEventListener('click', (e) => {
-                    const target = e.target;
-                    // 点击复选框
-                    if (target.classList.contains('checkbox-overlay')) {
-                        this.toggleThumbnailSelection(parseInt(target.dataset.id), e.ctrlKey || e.metaKey);
-                        return;
-                    }
-                    // 点击自动标注按钮
-                    if (target.classList.contains('auto-annotate-btn')) {
-                        e.stopPropagation();
-                        this.startSingleAutoAnnotate(parseInt(target.dataset.id));
-                        return;
-                    }
-                    // 点击缩略图
-                    const thumbnailItem = target.closest('.thumbnail-item');
-                    if (thumbnailItem && !target.classList.contains('delete-test-case-btn') && !target.classList.contains('auto-annotate-btn')) {
-                        // Ctrl+点击进行多选
-                        if (e.ctrlKey || e.metaKey) {
-                            this.toggleThumbnailSelection(parseInt(thumbnailItem.dataset.id), true);
-                        } else {
-                            this.loadTestCase(thumbnailItem.dataset.id);
-                        }
-                    }
-                    // 点击删除按钮
-                    if (target.classList.contains('delete-test-case-btn')) {
-                        this.deleteTestCase(target.dataset.id);
-                    }
-                });
-            }
-
-            // 缩略图滚动区域拖动和滚轮滚动
-            if (dom.thumbnailScrollWrapper) {
-                let isDragging = false;
-                let startX;
-                let scrollLeft;
-                let dragStarted = false;
-
-                // 鼠标按下开始拖动
-                dom.thumbnailScrollWrapper.addEventListener('mousedown', (e) => {
-                    // 如果点击的是缩略图或按钮，不启动拖动
-                    if (e.target.closest('.thumbnail-item') || e.target.closest('button')) {
-                        return;
-                    }
-                    isDragging = true;
-                    dragStarted = false;
-                    startX = e.clientX;
-                    scrollLeft = dom.thumbnailScrollWrapper.scrollLeft;
-                    dom.thumbnailScrollWrapper.style.cursor = 'grabbing';
-                });
-
-                // 鼠标移动拖动
-                dom.thumbnailScrollWrapper.addEventListener('mousemove', (e) => {
-                    if (!isDragging) return;
-                    const x = e.clientX;
-                    const walk = x - startX;
-                    if (Math.abs(walk) > 3) {
-                        dragStarted = true;
-                    }
-                    if (dragStarted) {
-                        e.preventDefault();
-                        dom.thumbnailScrollWrapper.scrollLeft = scrollLeft - walk;
-                    }
-                });
-
-                // 鼠标释放停止拖动
-                dom.thumbnailScrollWrapper.addEventListener('mouseup', () => {
-                    isDragging = false;
-                    dom.thumbnailScrollWrapper.style.cursor = 'grab';
-                    // 延迟重置 dragStarted，避免点击事件冲突
-                    setTimeout(() => { dragStarted = false; }, 50);
-                });
-
-                // 鼠标离开停止拖动
-                dom.thumbnailScrollWrapper.addEventListener('mouseleave', () => {
-                    isDragging = false;
-                    dragStarted = false;
-                    dom.thumbnailScrollWrapper.style.cursor = 'grab';
-                });
-
-                // 阻止拖动时的点击冒泡
-                dom.thumbnailScrollWrapper.addEventListener('click', (e) => {
-                    if (dragStarted) {
-                        e.stopPropagation();
-                        e.preventDefault();
-                    }
-                }, true);
-
-                // 滚轮水平滚动（按住Shift或直接使用滚轮）
-                dom.thumbnailScrollWrapper.addEventListener('wheel', (e) => {
-                    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-                        // 垂直滚动转换为水平滚动
-                        e.preventDefault();
-                        dom.thumbnailScrollWrapper.scrollLeft += e.deltaY;
-                    } else {
-                        // 水平滚轮直接处理
-                        e.preventDefault();
-                        dom.thumbnailScrollWrapper.scrollLeft += e.deltaX;
-                    }
-                }, { passive: false });
-            }
-
-            // 全选复选框
-            if (dom.selectAllThumbnails) {
-                dom.selectAllThumbnails.onchange = () => this.toggleSelectAll();
-            }
-
-<<<<<<< HEAD
-            // 右键菜单功能
-            if (dom.boxContextMenu) {
-                dom.boxContextMenu.addEventListener('click', (e) => {
-                    const target = e.target.closest('.context-menu-item');
-                    if (!target) return;
-                    if (target.id === 'ctx-delete-box') {
-                        const activeObject = state.fabricCanvas.getActiveObject();
-                        if (activeObject && activeObject.type === 'rect') {
-                            state.fabricCanvas.remove(activeObject);
-                            Notification.success('标注框已删除', '删除成功', 2000);
-                            // 自动保存到暂存区（类似 CVAT）
-                            if (state.currentTestCaseId) {
-                                this.saveToCache(state.currentTestCaseId);
-                            }
-                        }
-                    }
-                    dom.boxContextMenu.style.display = 'none';
-                });
-
-                // 画布右键菜单
-                dom.canvasWrapper.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                    const activeObject = state.fabricCanvas.getActiveObject();
-                    if (activeObject && activeObject.type === 'rect') {
-                        dom.boxContextMenu.style.display = 'block';
-                        dom.boxContextMenu.style.left = e.offsetX + 'px';
-                        dom.boxContextMenu.style.top = e.offsetY + 'px';
-                    }
-                });
-
-                // 点击其他地方关闭右键菜单
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('.context-menu')) {
-                        dom.boxContextMenu.style.display = 'none';
-                    }
-                });
-            }
-
-=======
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             // 批量删除
             if (dom.batchDeleteBtn) {
                 dom.batchDeleteBtn.onclick = () => this.batchDeleteTestCases();
@@ -2520,15 +1809,27 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 顶部按钮
-            dom.addDefectBtn.onclick = () => this.showAddDefectModal();
-            dom.importDefectsBtn.onclick = () => this.showImportModal();
-            dom.exportDefectsBtn.onclick = () => this.exportDefects();
-            dom.editGlobalTemplateBtn.onclick = () => this.showGlobalTemplateModal();
+            if (dom.addDefectBtn) {
+                dom.addDefectBtn.onclick = () => this.showAddDefectModal();
+            }
+            if (dom.importDefectsBtn) {
+                dom.importDefectsBtn.onclick = () => this.showImportModal();
+            }
+            if (dom.exportDefectsBtn) {
+                dom.exportDefectsBtn.onclick = () => this.exportDefects();
+            }
+            if (dom.editGlobalTemplateBtn) {
+                dom.editGlobalTemplateBtn.onclick = () => this.showGlobalTemplateModal();
+            }
             if (dom.settingsBtn) {
                 dom.settingsBtn.onclick = () => this.showSettingsModal();
             }
-            dom.runRegressionBtn.onclick = () => this.runRegressionTest();
-            dom.runComparisonBtn.onclick = () => this.runComparisonWithConfirm();
+            if (dom.runRegressionBtn) {
+                dom.runRegressionBtn.onclick = () => this.runRegressionTest();
+            }
+            if (dom.runComparisonBtn) {
+                dom.runComparisonBtn.onclick = () => this.runComparisonWithConfirm();
+            }
             if (dom.themeToggle) {
                 dom.themeToggle.onclick = () => this.toggleTheme();
             }
@@ -2543,7 +1844,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 批量导入模态框事件
-            this.initBatchImportEvents();
+            if (typeof this.initBatchImportEvents === 'function') {
+                this.initBatchImportEvents();
+            }
         },
 
         // --- 批量操作方法 ---
@@ -2673,59 +1976,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-<<<<<<< HEAD
             // 使用新的模态框显示确认对话框
             this.showSingleDefectAnnotateModal(testCaseId);
-=======
-            const testCase = state.testCases.find(tc => tc.id === testCaseId);
-            const testCaseName = testCase ? testCase.filename : `ID: ${testCaseId}`;
-
-            const result = await ConfirmDialog.askWithCheckbox(
-                `对「${testCaseName}」进行自动标注？`,
-                '清除现有标注框',
-                true
-            );
-
-            if (!result.confirmed) return;
-
-            const clearExisting = result.checkboxValue;
-
-            // 设置按钮为加载状态
-            const btn = document.querySelector(`.auto-annotate-btn[data-id="${testCaseId}"]`);
-            if (btn) {
-                btn.classList.add('loading');
-                btn.disabled = true;
-            }
-
-            Loading.show(`正在自动标注「${testCaseName}」...`);
-
-            try {
-                const result = await api.post(`/api/auto_annotate/defect/${state.currentDefectId}`, {
-                    clear_existing_boxes: clearExisting,
-                    test_case_ids: [testCaseId]
-                });
-
-                Loading.hide();
-
-                if (result.success) {
-                    Notification.success(`自动标注任务已启动`, '任务创建成功');
-                    this.pollAutoAnnotateStatus(result.task_id);
-                } else {
-                    Notification.error(result.error || '启动失败', '自动标注失败');
-                    if (btn) {
-                        btn.classList.remove('loading');
-                        btn.disabled = false;
-                    }
-                }
-            } catch (error) {
-                Loading.hide();
-                Notification.error(`启动失败: ${error.message}`, '自动标注失败');
-                if (btn) {
-                    btn.classList.remove('loading');
-                    btn.disabled = false;
-                }
-            }
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
         },
 
         async pollAutoAnnotateStatus(taskId) {
@@ -2739,26 +1991,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const status = await api.get(`/api/auto_annotate/task/${taskId}`);
 
                     if (status.status === 'completed') {
-<<<<<<< HEAD
                         Loading.hide();
-=======
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
-                        Notification.success(
-                            `自动标注完成！共生成 ${status.total_boxes_created} 个标注框`,
-                            '任务完成'
-                        );
-                        // 刷新测试用例列表以显示新的标注框
-                        const data = await api.get(`/api/defect/${state.currentDefectId}`);
-                        state.testCases = data.test_cases;
-                        this.renderTestCases();
-                        return;
-                    }
-
-                    if (status.status === 'failed') {
-<<<<<<< HEAD
-                        Loading.hide();
-=======
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                         Notification.error(status.error_message || '处理失败', '自动标注失败');
                         return;
                     }
@@ -2819,7 +2052,6 @@ document.addEventListener('DOMContentLoaded', () => {
             dom.modalBackdrop.style.display = 'none';
         },
 
-<<<<<<< HEAD
         // --- 单图自动标注模态框 ---
         currentSingleAnnotateTestCaseId: null,
 
@@ -2909,511 +2141,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
-=======
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
-        async loadBatchDefectList() {
-            const loadingEl = document.getElementById('batch-defect-loading');
-            const listEl = document.getElementById('batch-defect-list');
-            const errorEl = document.getElementById('batch-defect-error');
-            const errorMsgEl = document.getElementById('batch-defect-error-msg');
-            const executeBtn = document.getElementById('batch-defect-execute-btn');
-
-            try {
-                // 调用服务测试接口获取缺陷列表
-                const result = await api.post('/api/trueno3_service_test', {});
-
-                loadingEl.style.display = 'none';
-
-                if (!result.success) {
-                    errorEl.style.display = 'flex';
-                    errorMsgEl.textContent = result.error || '无法连接到自动标注服务';
-                    return;
-                }
-
-                const functions = result.functions || [];
-                const matchedDefects = result.matched_defects || [];
-
-                if (functions.length === 0) {
-                    errorEl.style.display = 'flex';
-                    errorMsgEl.textContent = '服务没有可用的缺陷定义';
-                    return;
-                }
-
-                // 创建缺陷名称到中文名的映射
-                const matchedMap = {};
-                matchedDefects.forEach(d => {
-                    matchedMap[d.name] = d.defect_cn;
-                });
-
-                // 渲染缺陷列表
-                listEl.innerHTML = functions.map(f => {
-                    const isMatched = matchedMap[f.funID];
-                    return `
-                        <div class="batch-defect-item ${isMatched ? '' : 'no-match'}" data-name="${f.funID}">
-                            <input type="checkbox" value="${f.funID}" ${isMatched ? 'checked' : ''}>
-                            <div class="defect-info">
-                                <div class="defect-name">${f.funID}</div>
-                                <div class="defect-desc">${f.funDesc || '无描述'}</div>
-                            </div>
-                            <span class="defect-status ${isMatched ? '' : 'no-match'}">
-                                ${isMatched ? '已匹配' : '未匹配'}
-                            </span>
-                        </div>
-                    `;
-                }).join('');
-
-                // 绑定点击事件
-                listEl.querySelectorAll('.batch-defect-item').forEach(item => {
-                    item.onclick = (e) => {
-                        if (e.target.tagName === 'INPUT') return;
-                        const checkbox = item.querySelector('input[type="checkbox"]');
-                        checkbox.checked = !checkbox.checked;
-                        item.classList.toggle('selected', checkbox.checked);
-                        this.updateBatchDefectExecuteBtn();
-                    };
-
-                    item.querySelector('input[type="checkbox"]').onchange = () => {
-                        item.classList.toggle('selected', item.querySelector('input[type="checkbox"]').checked);
-                        this.updateBatchDefectExecuteBtn();
-                    };
-                });
-
-                // 更新执行按钮状态
-                this.updateBatchDefectExecuteBtn();
-
-            } catch (error) {
-                loadingEl.style.display = 'none';
-                errorEl.style.display = 'flex';
-                errorMsgEl.textContent = error.message || '加载失败';
-            }
-        },
-
-        updateBatchDefectExecuteBtn() {
-            const checkedItems = document.querySelectorAll('#batch-defect-list input[type="checkbox"]:checked');
-            const executeBtn = document.getElementById('batch-defect-execute-btn');
-            executeBtn.disabled = checkedItems.length === 0;
-        },
-
-        async executeBatchDefectAnnotate() {
-            const checkedItems = document.querySelectorAll('#batch-defect-list input[type="checkbox"]:checked');
-            const defectNames = Array.from(checkedItems).map(item => item.value);
-            const clearExisting = document.getElementById('batch-defect-clear-existing').checked;
-
-            if (defectNames.length === 0) {
-                Notification.warning('请选择要自动标注的缺陷', '提示');
-                return;
-            }
-
-            const confirmed = await ConfirmDialog.ask(
-                `将对 ${defectNames.length} 个缺陷进行自动标注。\n\n` +
-                `已选择的缺陷：${defectNames.join(', ')}\n\n` +
-                `${clearExisting ? '⚠️ 将清除现有标注框' : '保留现有标注框'}`,
-                '批量自动标注确认'
-            );
-
-            if (!confirmed) return;
-
-            Loading.show('正在启动批量自动标注任务...');
-
-            try {
-                const result = await api.post('/api/auto_annotate/batch_defects', {
-                    defect_names: defectNames,
-                    clear_existing_boxes: clearExisting
-                });
-
-                Loading.hide();
-
-                if (result.success) {
-                    Notification.success(result.message, '批量标注已启动');
-                    this.hideBatchDefectAnnotateModal();
-
-                    // 显示任务详情
-                    if (result.tasks && result.tasks.length > 0) {
-                        const taskDetails = result.tasks.map(t =>
-                            `${t.defect_name}: ${t.total_images} 张图片`
-                        ).join('\n');
-                        console.log('创建的任务:', taskDetails);
-                    }
-
-                    if (result.errors && result.errors.length > 0) {
-                        Notification.warning(result.errors.join('\n'), '部分缺陷处理失败');
-                    }
-                } else {
-                    Notification.error(result.error || '启动失败', '批量标注失败');
-                }
-            } catch (error) {
-                Loading.hide();
-                Notification.error(error.message || '请求失败', '批量标注失败');
-            }
-        },
-
-        // --- 批量导入相关方法 ---
-        initBatchImportEvents() {
-            const modal = dom.batchImportModal;
-            if (!modal) return;
-
-            const dropArea = document.getElementById('batch-import-drop');
-            const fileInput = document.getElementById('batch-import-input');
-            const selectFilesBtn = document.getElementById('batch-select-files-btn');
-            const selectFolderBtn = document.getElementById('batch-select-folder-btn');
-            const clearBtn = document.getElementById('batch-clear-btn');
-            const executeBtn = document.getElementById('batch-import-execute-btn');
-
-            // 关闭按钮
-            modal.querySelector('.modal-close').onclick = () => this.hideBatchImportModal();
-            modal.querySelector('.modal-cancel').onclick = () => this.hideBatchImportModal();
-
-            // 选择文件
-            if (selectFilesBtn) {
-                selectFilesBtn.onclick = () => {
-                    fileInput.removeAttribute('webkitdirectory');
-                    fileInput.removeAttribute('directory');
-                    fileInput.click();
-                };
-            }
-
-            // 选择文件夹
-            if (selectFolderBtn) {
-                selectFolderBtn.onclick = () => {
-                    fileInput.setAttribute('webkitdirectory', '');
-                    fileInput.setAttribute('directory', '');
-                    fileInput.click();
-                };
-            }
-
-            // 文件选择变化
-            if (fileInput) {
-                fileInput.onchange = (e) => this.handleBatchFiles(e.target.files);
-            }
-
-            // 拖拽
-            if (dropArea) {
-                dropArea.ondragover = (e) => {
-                    e.preventDefault();
-                    dropArea.classList.add('dragover');
-                };
-                dropArea.ondragleave = () => dropArea.classList.remove('dragover');
-                dropArea.ondrop = (e) => {
-                    e.preventDefault();
-                    dropArea.classList.remove('dragover');
-                    this.handleBatchFiles(e.dataTransfer.files);
-                };
-            }
-
-            // 清空
-            if (clearBtn) {
-                clearBtn.onclick = () => {
-                    state.batchImportFiles = [];
-                    this.renderBatchPreview();
-                };
-            }
-
-            // 执行导入
-            if (executeBtn) {
-                executeBtn.onclick = () => this.executeBatchImport();
-            }
-        },
-
-        showBatchImportModal() {
-            if (!state.currentDefectId) {
-                Notification.warning('请先选择一个缺陷类别', '提示');
-                return;
-            }
-            state.batchImportFiles = [];
-            this.renderBatchPreview();
-            dom.batchImportModal.style.display = 'block';
-            dom.modalBackdrop.style.display = 'block';
-        },
-
-        hideBatchImportModal() {
-            dom.batchImportModal.style.display = 'none';
-            dom.modalBackdrop.style.display = 'none';
-            state.batchImportFiles = [];
-        },
-
-        handleBatchFiles(files) {
-            const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
-            if (imageFiles.length === 0) {
-                Notification.warning('未找到有效的图片文件', '提示');
-                return;
-            }
-
-            state.batchImportFiles = [...state.batchImportFiles, ...imageFiles];
-            this.renderBatchPreview();
-            Notification.info(`已添加 ${imageFiles.length} 张图片`, '导入准备');
-        },
-
-        renderBatchPreview() {
-            const preview = document.getElementById('batch-import-preview');
-            const grid = document.getElementById('batch-preview-grid');
-            const count = document.getElementById('batch-count');
-            const executeBtn = document.getElementById('batch-import-execute-btn');
-
-            if (state.batchImportFiles.length === 0) {
-                preview.style.display = 'none';
-                executeBtn.disabled = true;
-                return;
-            }
-
-            preview.style.display = 'block';
-            count.textContent = state.batchImportFiles.length;
-            executeBtn.disabled = false;
-
-            grid.innerHTML = state.batchImportFiles.map((file, index) => {
-                const url = URL.createObjectURL(file);
-                return `
-                    <div class="preview-item" data-index="${index}">
-                        <img src="${url}" alt="${file.name}">
-                        <button class="remove-btn" data-index="${index}">&times;</button>
-                    </div>
-                `;
-            }).join('');
-
-            // 删除按钮事件
-            grid.querySelectorAll('.remove-btn').forEach(btn => {
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    const index = parseInt(btn.dataset.index);
-                    state.batchImportFiles.splice(index, 1);
-                    this.renderBatchPreview();
-                };
-            });
-        },
-
-        async executeBatchImport() {
-            if (state.batchImportFiles.length === 0 || !state.currentDefectId) return;
-
-            const progress = document.getElementById('batch-import-progress');
-            const progressFill = document.getElementById('batch-progress-fill');
-            const progressText = document.getElementById('batch-progress-text');
-            const executeBtn = document.getElementById('batch-import-execute-btn');
-            const isPositive = document.querySelector('input[name="batch-sample-type"]:checked')?.value === 'positive';
-            const autoAnnotate = document.getElementById('batch-auto-annotate')?.checked;
-
-            if (!progress || !executeBtn) return;
-
-            progress.style.display = 'block';
-            executeBtn.disabled = true;
-
-            let successCount = 0;
-            let failCount = 0;
-            const total = state.batchImportFiles.length;
-
-            for (let i = 0; i < total; i++) {
-                const file = state.batchImportFiles[i];
-                progressText.textContent = `正在处理 ${i + 1}/${total}: ${file.name}`;
-                progressFill.style.width = `${((i + 1) / total) * 100}%`;
-
-                try {
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    formData.append('defect_id', state.currentDefectId);
-                    formData.append('boxes', JSON.stringify([])); // 暂时没有标注
-                    formData.append('is_positive', isPositive);
-
-                    const result = await api.upload('/api/testcase', formData);
-                    if (result.id) {
-                        successCount++;
-                    } else {
-                        failCount++;
-                    }
-                } catch (error) {
-                    failCount++;
-                }
-            }
-
-            progress.style.display = 'none';
-            executeBtn.disabled = false;
-
-            // 刷新测试用例列表
-            const data = await api.get(`/api/defect/${state.currentDefectId}`);
-            state.testCases = data.test_cases;
-            this.renderTestCases();
-
-            this.hideBatchImportModal();
-
-            if (successCount > 0) {
-                Notification.success(`成功导入 ${successCount} 张图片，请为每张图片添加标注框`, '导入完成', 5000);
-
-                // 自动加载第一个测试用例并进入标注模式
-                const autoAnnotate = document.getElementById('batch-auto-annotate')?.checked;
-                if (autoAnnotate && state.testCases.length > 0) {
-                    // 找到第一个新导入的测试用例（最后导入的）
-                    const firstNewCase = state.testCases[0];
-                    if (firstNewCase) {
-                        setTimeout(() => {
-                            this.loadTestCase(firstNewCase.id);
-                            // 显示提示引导用户开始标注
-                            Notification.info('请点击"画框"按钮开始标注，标注会自动保存', '开始标注', 5000);
-                        }, 500);
-                    }
-                }
-            }
-            if (failCount > 0) {
-                Notification.warning(`${failCount} 张图片导入失败`, '部分失败');
-            }
-        },
-
-        // --- 功能方法 ---
-        async saveCurrentVersion() {
-            if (!state.currentVersionId) {
-                Notification.warning('请先选择一个版本', '提示');
-                return;
-            }
-
-            const data = {
-                defect_cn: document.getElementById('editor-defect_cn').value,
-                defect_class: document.getElementById('editor-defect_class').value,
-                judgment_points: document.getElementById('editor-judgment_points').value,
-                exclusions: document.getElementById('editor-exclusions').value,
-            };
-
-            try {
-                const result = await api.put(`/api/defect_version/${state.currentVersionId}`, data);
-                if (result.id) {
-                    state.hasUnsavedChanges = false;  // 保存成功，重置状态
-                    let message = '版本保存成功！';
-
-                    // 显示Trueno3同步结果
-                    if (result.trueno3_sync) {
-                        if (result.trueno3_sync.success) {
-                            message += '\n\n✓ Trueno3同步: ' + result.trueno3_sync.message;
-                        } else {
-                            message += '\n\n✗ Trueno3同步失败: ' + result.trueno3_sync.error;
-                        }
-                    }
-
-                    Notification.success(message, '保存成功', 5000);
-                    // 更新版本下拉列表中的显示（不重新加载编辑器内容）
-                    await this.updateVersionDropdown();
-                }
-            } catch (error) {
-                Notification.error('保存失败: ' + error.message, '保存失败');
-            }
-        },
-
-        async updateVersionDropdown() {
-            // 只更新版本下拉列表，不重新填充编辑器
-            const data = await api.get(`/api/defect/${state.currentDefectId}`);
-            const versions = data.versions || [];
-
-            dom.versionDropdown.innerHTML = versions.map(v =>
-                `<option value="${v.id}" ${v.id == state.currentVersionId ? 'selected' : ''}>
-                    V${v.version} - ${v.summary || 'No summary'} (${v.modifier})
-                </option>`
-            ).join('');
-        },
-
-        async saveAsNewVersion() {
-            if (!state.currentDefectId) { Notification.warning('请先选择一个缺陷', '提示'); return; }
-            const data = {
-                defect_id: state.currentDefectId,
-                defect_cn: document.getElementById('editor-defect_cn').value,
-                defect_class: document.getElementById('editor-defect_class').value,
-                judgment_points: document.getElementById('editor-judgment_points').value,
-                exclusions: document.getElementById('editor-exclusions').value,
-                summary: prompt('请输入本次版本的更新摘要:', 'UI优化和功能调整'),
-            };
-            if (!data.summary) return;
-
-            const newVersion = await api.post('/api/defect_version', data);
-            if (newVersion.id) {
-                state.hasUnsavedChanges = false;  // 保存成功，重置状态
-                let message = '新版本发布成功！';
-
-                // 显示Trueno3同步结果
-                if (newVersion.trueno3_sync) {
-                    if (newVersion.trueno3_sync.success) {
-                        message += '\n\n✓ Trueno3同步: ' + newVersion.trueno3_sync.message;
-                    } else {
-                        message += '\n\n✗ Trueno3同步失败: ' + newVersion.trueno3_sync.error;
-                    }
-                }
-
-                Notification.success(message, '发布成功', 5000);
-                await this.selectDefect(state.currentDefectId, true);  // 强制切换
-                this.selectVersion(newVersion.id, true);  // 强制切换
-            } else {
-                Notification.error('发布失败: ' + (newVersion.error || '未知错误'), '发布失败');
-            }
-        },
-        
-        async addTestCase(silent = false) {
-            const file = state.currentImage.file;
-            const boxes = this.getNormalizedBoxes();
-            if (!file || boxes.length === 0) {
-                if (!silent) Notification.warning('请上传图片并至少绘制一个标注框！', '提示');
-                return null;
-            }
-            
-            if (!state.currentDefectId) {
-                if (!silent) Notification.warning('请先选择一个缺陷类别！', '提示');
-                return null;
-            }
-            
-            const sampleType = document.querySelector('input[name="sample-type"]:checked');
-            const isPositive = sampleType ? sampleType.value === 'positive' : true;
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('defect_id', state.currentDefectId);
-            formData.append('boxes', JSON.stringify(boxes));
-            formData.append('is_positive', isPositive);
-
-            const result = await api.upload('/api/testcase', formData);
-            if (result.id) {
-                if (!silent) Notification.success(`测试用例添加成功！(${isPositive ? '正例' : '反例'})`, '成功');
-                const defectId = result.defect_id || state.currentDefectId;
-                const data = await api.get(`/api/defect/${defectId}`);
-                state.testCases = data.test_cases;
-                this.renderTestCases();
-                this.loadTestCase(result.id);
-                return result.id;
-            } else {
-                if (!silent) Notification.error('添加失败: ' + (result.error || '未知错误'), '添加失败');
-                return null;
-            }
-        },
-        
-        async updateAnnotation() {
-            if (!state.currentTestCaseId) {
-                Notification.warning('请先选择一个测试用例', '提示');
-                return;
-            }
-            
-            const boxes = this.getNormalizedBoxes();
-            if (boxes.length === 0) {
-                Notification.warning('请至少绘制一个标注框', '提示');
-                return;
-            }
-            
-            Loading.show('正在更新标注...');
-            const result = await api.put(`/api/testcase/${state.currentTestCaseId}/boxes`, { boxes });
-            Loading.hide();
-            
-            if (result.success) {
-                Notification.success('标注已更新', '更新成功');
-                // 更新预览图
-                const testCase = state.testCases.find(tc => tc.id == state.currentTestCaseId);
-                if (testCase) {
-                    testCase.preview_url = testCase.filepath + '?t=' + Date.now();
-                    this.renderTestCases();
-                }
-                // 隐藏更新按钮
-                if (dom.updateAnnotationBtn) {
-                    dom.updateAnnotationBtn.style.display = 'none';
-                }
-            } else {
-                Notification.error('更新失败: ' + (result.error || '未知错误'), '更新失败');
-            }
-        },
-
-        // 自动保存标注（静默保存，不显示加载提示）
-<<<<<<< HEAD
+        // 自动保存标注
         async autoSaveAnnotation(showNotification = false) {
-=======
-        async autoSaveAnnotation() {
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
             if (!state.currentTestCaseId) return;
 
             const boxes = this.getNormalizedBoxes();
@@ -3422,7 +2151,6 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const result = await api.put(`/api/testcase/${state.currentTestCaseId}/boxes`, { boxes });
                 if (result.success) {
-<<<<<<< HEAD
                     // 更新暂存区状态
                     if (state.annotationCache[state.currentTestCaseId]) {
                         state.annotationCache[state.currentTestCaseId].isDirty = false;
@@ -3439,15 +2167,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         Notification.success('标注已保存', '保存成功', 1500);
                     }
-=======
-                    // 静默更新预览图，不刷新整个列表以避免干扰用户
-                    const testCase = state.testCases.find(tc => tc.id == state.currentTestCaseId);
-                    if (testCase) {
-                        testCase.preview_url = testCase.filepath + '?t=' + Date.now();
-                    }
-                    // 显示一个微妙的提示
-                    Notification.success('标注已自动保存', '保存成功', 1500);
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
                 }
             } catch (error) {
                 console.error('自动保存失败:', error);
@@ -4032,8 +2751,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- 系统设置模态框 ---
         async showSettingsModal() {
-            try {
-                const [template, llmConfig, trueno3Config] = await Promise.all([
+            const [template, llmConfig, trueno3Config] = await Promise.all([
                     api.get('/api/global_template'),
                     api.get('/api/llm_config'),
                     api.get('/api/trueno3_config')
@@ -4056,7 +2774,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ssh_username: '',
                     ssh_password: ''
                 };
-            
+
             dom.settingsModal.innerHTML = `
                 <div class="modal-header">⚙️ 系统设置</div>
                 <div class="modal-body">
@@ -4435,11 +3153,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.hideModals();
                 Notification.success('设置已保存！', '保存成功');
             };
-            
-            } catch (error) {
-                console.error('加载设置失败:', error);
-                Notification.error('加载设置失败，请检查网络连接或刷新页面重试', '加载失败');
-            }
         }
     };
 
