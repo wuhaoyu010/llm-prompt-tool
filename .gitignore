@@ -26,7 +26,6 @@ output/
 # Database (keep structure, ignore data)
 *.db
 *.db-journal
-# 注意：不再排除 app/*.db，数据库文件不应提交到仓库
 
 # Uploads
 app/uploads/*
@@ -52,11 +51,18 @@ data/
 # OS
 .DS_Store
 
+# Node.js
 node_modules/
-app/utils/uploads/
-<<<<<<< HEAD
 
+# Test artifacts
 artifacts/
 test-results/
-=======
->>>>>>> 975b1e21b4d97f7d3cd9d5cbcb5947b9aaa5ca66
+playwright-report/
+playwright-results.json
+
+# Root temp files
+test_response.*
+test_upload.png
+
+# Frontend build output (after restructure)
+src/frontend/dist/
