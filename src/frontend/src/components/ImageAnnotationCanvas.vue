@@ -118,10 +118,11 @@
           <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>Z</kbd> 撤销</div>
           <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>Y</kbd> 重做</div>
           <div class="shortcut-item"><kbd>Del</kbd> 删除选中</div>
-          <div class="shortcut-item"><kbd>双击框</kbd> 编辑标签</div>
         </div>
         <div class="shortcut-group">
           <div class="shortcut-title">视图操作</div>
+          <div class="shortcut-item"><kbd>Z</kbd> 缩放到选中框</div>
+          <div class="shortcut-item"><kbd>双击框</kbd> 缩放到该框</div>
           <div class="shortcut-item"><kbd>滚轮</kbd> 缩放</div>
           <div class="shortcut-item"><kbd>双击画布</kbd> 适应屏幕</div>
         </div>
@@ -927,15 +928,43 @@ function updateWrapperSize() {
 
 function fitToScreen() {
   if (!canvasWrapper.value || !naturalSize.value.width) return
-  
+
   const wrapper = canvasWrapper.value
   const wrapperWidth = wrapper.clientWidth - 40
   const wrapperHeight = wrapper.clientHeight - 40
-  
+
   const scaleX = wrapperWidth / naturalSize.value.width
   const scaleY = wrapperHeight / naturalSize.value.height
-  
+
   scale.value = Math.min(scaleX, scaleY, 1)
+}
+
+// 缩放到指定框（框占屏幕 70%）
+function zoomToBox(box) {
+  if (!box || !naturalSize.value.width || !canvasWrapper.value) return
+
+  const boxW = normToPixel(box.width, naturalSize.value.width)
+  const boxH = normToPixel(box.height, naturalSize.value.height)
+  const boxCX = normToPixel(box.x, naturalSize.value.width) + boxW / 2
+  const boxCY = normToPixel(box.y, naturalSize.value.height) + boxH / 2
+
+  // 计算目标缩放比例（框占屏幕 70%）
+  const targetScale = Math.min(
+    (wrapperSize.value.width * 0.7) / boxW,
+    (wrapperSize.value.height * 0.7) / boxH,
+    5 // 最大 5x
+  )
+
+  scale.value = targetScale
+
+  // 居中显示
+  nextTick(() => {
+    const scrollX = boxCX * targetScale - wrapperSize.value.width / 2
+    const scrollY = boxCY * targetScale - wrapperSize.value.height / 2
+    canvasWrapper.value.scrollTo(scrollX, scrollY)
+    updateScrollPosition()
+    drawAnnotations()
+  })
 }
 
 // 滚轮缩放
@@ -948,24 +977,24 @@ function handleWheel(e) {
 
 // 双击恢复 - 无论点击图片还是画布都能触发
 function handleDoubleClick(e) {
-  // 双击标注框 - 编辑标签
+  // 双击标注框 - 缩放到该框
   if (currentTool.value === 'select') {
     const coords = getCanvasCoordinates(e)
     const clickedBox = getBoxAt(coords.x, coords.y)
     if (clickedBox) {
-      editingBoxId.value = clickedBox.id
-      editingLabel.value = clickedBox.label || ''
-      showLabelEditor.value = true
-      nextTick(() => {
-        const input = document.querySelector('.label-editor-content input')
-        input?.focus()
-      })
+      selectedBox.value = clickedBox
+      zoomToBox(clickedBox)
       return
     }
   }
 
   // 双击空白区域 - 适应屏幕
   fitToScreen()
+  nextTick(() => {
+    updateScrollPosition()
+    updateWrapperSize()
+    drawAnnotations()
+  })
 }
 
 // 标签编辑器
@@ -1044,6 +1073,15 @@ function handleKeyDown(e) {
     case 'v':
       e.preventDefault()
       setTool('select')
+      return
+    case 'z':
+      // Z 键（非 Ctrl）缩放到选中框
+      if (!e.ctrlKey && !e.metaKey) {
+        e.preventDefault()
+        if (selectedBox.value) {
+          zoomToBox(selectedBox.value)
+        }
+      }
       return
   }
 
