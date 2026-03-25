@@ -136,8 +136,20 @@ app = create_app()
 
 @app.route('/')
 def index():
-    """首页"""
-    return render_template('index.html')
+    """首页 - 返回 Vue 前端"""
+    return send_from_directory(os.path.join(app.static_folder, 'vue-dist'), 'index.html')
+
+
+@app.route('/assets/<path:filename>')
+def vue_assets(filename):
+    """Vue 前端静态资源"""
+    return send_from_directory(os.path.join(app.static_folder, 'vue-dist', 'assets'), filename)
+
+
+@app.route('/favicon.svg')
+def favicon():
+    """图标"""
+    return send_from_directory(os.path.join(app.static_folder, 'vue-dist'), 'favicon.svg')
 
 
 @app.route('/uploads/<path:filename>')
