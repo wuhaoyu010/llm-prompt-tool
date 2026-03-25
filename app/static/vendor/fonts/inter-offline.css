@@ -1,0 +1,45 @@
+/* Inter 字体 - 离线版本 */
+/* 如果字体文件不存在，请从以下链接手动下载：
+   https://github.com/rsms/inter/releases/download/v4.0/Inter-4.0.zip
+   解压后将 InterVariable.ttf 和 InterVariable-Italic.ttf 放入 inter/ 目录
+*/
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  src: url('inter/inter-300.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  src: url('inter/inter-400.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  src: url('inter/inter-500.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  src: url('inter/inter-600.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  src: url('inter/inter-700.ttf') format('truetype');
+  font-display: swap;
+}

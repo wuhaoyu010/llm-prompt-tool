@@ -1,0 +1,29 @@
+/* Material Icons - 离线版本 */
+/* 如果字体文件不存在，请从以下链接手动下载：
+   https://github.com/google/material-design-icons/tree/master/font
+   将 MaterialIcons-Regular.ttf 放入 material-icons/ 目录
+*/
+
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  src: url('material-icons/MaterialIcons-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}

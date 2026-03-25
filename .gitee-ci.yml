@@ -1,0 +1,63 @@
+stages:
+  - install
+  - build
+  - package
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+    - build/
+
+# ============================================
+# Linux版本构建
+# ============================================
+build_linux:
+  stage: build
+  image: python:3.10-slim
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends gcc libjpeg-dev zlib1g-dev curl
+  script:
+    - echo "Installing dependencies..."
+    - pip install --no-cache-dir -r requirements.txt pyinstaller
+    - echo "Building Linux executable..."
+    - pyinstaller --clean --noconfirm prompt_tool.spec
+    - echo "Packaging..."
+    - cd dist && tar -czf PromptTool-Linux.tar.gz PromptTool/
+  artifacts:
+    name: "PromptTool-Linux-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - dist/PromptTool-Linux.tar.gz
+    expire_in: 30 days
+  only:
+    - master
+    - main
+    - tags
+
+# ============================================
+# Docker镜像构建
+# ============================================
+docker_build:
+  stage: package
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker info
+  script:
+    - echo "Building Docker image..."
+    - docker build -t prompt-tool:$CI_COMMIT_SHORT_SHA .
+    - docker save prompt-tool:$CI_COMMIT_SHORT_SHA | gzip > dist/prompt-tool-docker.tar.gz
+  artifacts:
+    name: "PromptTool-Docker-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - dist/prompt-tool-docker.tar.gz
+    expire_in: 30 days
+  only:
+    - master
+    - main
+    - tags
+  dependencies:
+    - build_linux

@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+ENV/
+.pytest_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Claude Code
+.claude/
+
+# Project specific
+.trae/
+.playwright-cli/
+output/
+
+# Database (keep structure, ignore data)
+*.db
+*.db-journal
+# 注意：不再排除 app/*.db，数据库文件不应提交到仓库
+
+# Uploads
+app/uploads/*
+!app/uploads/.gitkeep
+
+# Distribution / Packaging
+/dist
+/build
+/build_env
+/release
+*.egg-info/
+*.egg
+llm_auto_update_prompt/
+llm_auto_update_prompt.zip
+*.zip
+
+# Docker
+data/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+node_modules/
+app/utils/uploads/
+
+artifacts/
+test-results/
