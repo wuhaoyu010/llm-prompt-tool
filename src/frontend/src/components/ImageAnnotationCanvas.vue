@@ -469,8 +469,20 @@ function drawCenterMark(ctx, x, y, w, h) {
 
 // 绘制调整大小的控制点
 function drawResizeHandles(ctx, x, y, w, h) {
-  const handleSize = 6
-  const handles = [
+  // 小框阈值 - 小于此值的手柄会缩小
+  const SMALL_BOX_THRESHOLD = 30
+  const isSmallBox = w < SMALL_BOX_THRESHOLD || h < SMALL_BOX_THRESHOLD
+
+  // 根据框大小调整手柄尺寸
+  const handleSize = isSmallBox ? 4 : 6
+
+  // 小框只绘制4个角点，大框绘制全部8个
+  const handles = isSmallBox ? [
+    { x: x, y: y },           // 左上
+    { x: x + w, y: y },       // 右上
+    { x: x + w, y: y + h },   // 右下
+    { x: x, y: y + h }        // 左下
+  ] : [
     { x: x, y: y },           // 左上
     { x: x + w/2, y: y },     // 上中
     { x: x + w, y: y },       // 右上
@@ -485,7 +497,7 @@ function drawResizeHandles(ctx, x, y, w, h) {
     // 白色填充 + 红色边框的控制点
     ctx.fillStyle = 'white'
     ctx.strokeStyle = '#DC2626'
-    ctx.lineWidth = 1.5
+    ctx.lineWidth = isSmallBox ? 1 : 1.5
     ctx.beginPath()
     ctx.arc(handle.x, handle.y, handleSize, 0, Math.PI * 2)
     ctx.fill()
@@ -510,8 +522,20 @@ function getResizeHandle(x, y, box) {
   const bw = normToPixel(box.width, naturalSize.value.width)
   const bh = normToPixel(box.height, naturalSize.value.height)
 
-  const handleRadius = 8 // 检测半径稍大于绘制半径，便于点击
-  const handles = [
+  // 小框阈值
+  const SMALL_BOX_THRESHOLD = 30
+  const isSmallBox = bw < SMALL_BOX_THRESHOLD || bh < SMALL_BOX_THRESHOLD
+
+  // 根据框大小调整检测半径
+  const handleRadius = isSmallBox ? 6 : 8
+
+  // 小框只有4个角点，大框有8个
+  const handles = isSmallBox ? [
+    { name: 'nw', cx: bx, cy: by },
+    { name: 'ne', cx: bx + bw, cy: by },
+    { name: 'se', cx: bx + bw, cy: by + bh },
+    { name: 'sw', cx: bx, cy: by + bh }
+  ] : [
     { name: 'nw', cx: bx, cy: by },
     { name: 'n', cx: bx + bw/2, cy: by },
     { name: 'ne', cx: bx + bw, cy: by },
