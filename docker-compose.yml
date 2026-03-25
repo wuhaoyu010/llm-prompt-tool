@@ -8,9 +8,9 @@ services:
       - "5001:5001"
     volumes:
       # Persist database
-      - ./data/app:/app/app
+      - ./data/app:/app/data
       # Persist uploads
-      - ./data/uploads:/app/app/uploads
+      - ./data/uploads:/app/uploads
     environment:
       - FLASK_ENV=production
       - SECRET_KEY=your-secret-key-change-in-production

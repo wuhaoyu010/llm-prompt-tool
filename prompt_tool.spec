@@ -13,15 +13,15 @@ a = Analysis(
     pathex=[project_root],
     binaries=[],
     datas=[
-        # 包含 app 模块的所有文件
-        (os.path.join(project_root, 'app', '*.py'), 'app'),
-        (os.path.join(project_root, 'app', 'templates'), 'app/templates'),
-        (os.path.join(project_root, 'app', 'static'), 'app/static'),
+        # 包含 backend 模块的所有文件
+        (os.path.join(project_root, 'src', 'backend', '*.py'), 'app'),
+        (os.path.join(project_root, 'src', 'backend', 'templates'), 'app/templates'),
+        (os.path.join(project_root, 'src', 'backend', 'static'), 'app/static'),
     ],
     hiddenimports=[
-        'app',
-        'app.main',
-        'app.database',
+        'src.backend',
+        'src.backend.main',
+        'src.backend.database',
         'flask',
         'flask_sqlalchemy',
         'PIL',

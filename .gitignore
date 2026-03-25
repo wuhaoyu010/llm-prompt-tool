@@ -28,8 +28,8 @@ output/
 *.db-journal
 
 # Uploads
-app/uploads/*
-!app/uploads/.gitkeep
+src/backend/uploads/*
+!src/backend/uploads/.gitkeep
 
 # Distribution / Packaging
 /dist

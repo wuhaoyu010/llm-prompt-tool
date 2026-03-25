@@ -4,7 +4,7 @@ FROM python:3.10-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV FLASK_APP=app.main:app
+ENV FLASK_APP=src.backend.main:app
 ENV FLASK_ENV=production
 
 # Set working directory
@@ -23,7 +23,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY app/ ./app/
+COPY src/backend/ ./app/
 COPY scripts/migrations/init_db.py .
 COPY scripts/migrations/migrate_db.py .
 COPY run_standalone.py .

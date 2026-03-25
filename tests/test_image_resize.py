@@ -17,7 +17,7 @@ class TestResizeImageForVLM:
 
     def test_small_image_no_resize(self):
         """测试小图不触发缩放（宽高都 <= 1920）"""
-        from app.services.llm_service import _resize_image_for_vlm
+        from src.backend.services.llm_service import _resize_image_for_vlm
 
         # 创建一个 1920x1080 的图片
         image = np.zeros((1080, 1920, 3), dtype=np.uint8)
@@ -29,7 +29,7 @@ class TestResizeImageForVLM:
 
     def test_small_square_image_no_resize(self):
         """测试小正方形图不触发缩放"""
-        from app.services.llm_service import _resize_image_for_vlm
+        from src.backend.services.llm_service import _resize_image_for_vlm
 
         # 创建一个 1000x1000 的图片
         image = np.zeros((1000, 1000, 3), dtype=np.uint8)
@@ -40,7 +40,7 @@ class TestResizeImageForVLM:
 
     def test_large_width_triggers_resize(self):
         """测试宽度超过1920触发缩放"""
-        from app.services.llm_service import _resize_image_for_vlm
+        from src.backend.services.llm_service import _resize_image_for_vlm
 
         # 创建一个 2500x1000 的图片（宽超过1920）
         image = np.zeros((1000, 2500, 3), dtype=np.uint8)
@@ -58,7 +58,7 @@ class TestResizeImageForVLM:
 
     def test_large_height_triggers_resize(self):
         """测试高度超过1920触发缩放"""
-        from app.services.llm_service import _resize_image_for_vlm
+        from src.backend.services.llm_service import _resize_image_for_vlm
 
         # 创建一个 1000x2500 的图片（高超过1920）
         image = np.zeros((2500, 1000, 3), dtype=np.uint8)
@@ -74,7 +74,7 @@ class TestResizeImageForVLM:
 
     def test_large_both_dimensions_triggers_resize(self):
         """测试宽高都超过1920触发缩放"""
-        from app.services.llm_service import _resize_image_for_vlm
+        from src.backend.services.llm_service import _resize_image_for_vlm
 
         # 创建一个 3000x2000 的图片
         image = np.zeros((2000, 3000, 3), dtype=np.uint8)
@@ -87,7 +87,7 @@ class TestResizeImageForVLM:
 
     def test_output_dimensions_multiple_of_28(self):
         """测试输出尺寸是28的倍数"""
-        from app.services.llm_service import _resize_image_for_vlm
+        from src.backend.services.llm_service import _resize_image_for_vlm
 
         # 创建一个 2520x1680 的图片（需要缩放）
         image = np.zeros((1680, 2520, 3), dtype=np.uint8)
@@ -99,7 +99,7 @@ class TestResizeImageForVLM:
 
     def test_aspect_ratio_preserved(self):
         """测试缩放后保持纵横比"""
-        from app.services.llm_service import _resize_image_for_vlm
+        from src.backend.services.llm_service import _resize_image_for_vlm
 
         # 创建一个 2800x1400 的图片（2:1 比例）
         image = np.zeros((1400, 2800, 3), dtype=np.uint8)
@@ -116,7 +116,7 @@ class TestResizeImageForVLM:
 
     def test_scale_factors_correct(self):
         """测试缩放因子计算正确"""
-        from app.services.llm_service import _resize_image_for_vlm
+        from src.backend.services.llm_service import _resize_image_for_vlm
 
         # 创建一个 2240x1120 的图片
         original_h, original_w = 1120, 2240
@@ -132,7 +132,7 @@ class TestResizeImageForVLM:
 
     def test_very_large_image(self):
         """测试非常大的图片"""
-        from app.services.llm_service import _resize_image_for_vlm
+        from src.backend.services.llm_service import _resize_image_for_vlm
 
         # 创建一个 8000x6000 的图片
         image = np.zeros((6000, 8000, 3), dtype=np.uint8)
@@ -145,7 +145,7 @@ class TestResizeImageForVLM:
 
     def test_exact_1920_no_resize(self):
         """测试恰好1920不触发缩放"""
-        from app.services.llm_service import _resize_image_for_vlm
+        from src.backend.services.llm_service import _resize_image_for_vlm
 
         # 创建一个 1920x1920 的图片
         image = np.zeros((1920, 1920, 3), dtype=np.uint8)
@@ -157,7 +157,7 @@ class TestResizeImageForVLM:
 
     def test_just_over_1920_triggers_resize(self):
         """测试刚好超过1920触发缩放"""
-        from app.services.llm_service import _resize_image_for_vlm
+        from src.backend.services.llm_service import _resize_image_for_vlm
 
         # 创建一个 1921x1080 的图片（宽刚好超过1920）
         image = np.zeros((1080, 1921, 3), dtype=np.uint8)
@@ -169,7 +169,7 @@ class TestResizeImageForVLM:
 
     def test_grayscale_image(self):
         """测试灰度图（2D数组）"""
-        from app.services.llm_service import _resize_image_for_vlm
+        from src.backend.services.llm_service import _resize_image_for_vlm
 
         # 创建一个 2500x1000 的灰度图
         image = np.zeros((1000, 2500), dtype=np.uint8)
@@ -185,7 +185,7 @@ class TestResizeImageIntegration:
 
     def test_coordinate_transformation(self):
         """测试坐标转换（模拟bounding box坐标映射）"""
-        from app.services.llm_service import _resize_image_for_vlm
+        from src.backend.services.llm_service import _resize_image_for_vlm
 
         # 创建一个大图
         original_h, original_w = 2000, 3000

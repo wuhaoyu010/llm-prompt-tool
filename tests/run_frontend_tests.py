@@ -15,7 +15,7 @@ os.environ['FLASK_ENV'] = 'development'
 
 def run_server():
     """在后台启动Flask服务器"""
-    from app.main import app
+    from src.backend.main import app
     app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False)
 
 def check_server():

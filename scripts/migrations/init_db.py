@@ -1,6 +1,6 @@
 import os
 from app import create_app
-from app.database import db, init_db, GlobalPromptTemplate, LLMConfig, Trueno3Config, Defect, DefectVersion
+from src.backend.database import db, init_db, GlobalPromptTemplate, LLMConfig, Trueno3Config, Defect, DefectVersion
 
 # 创建一个应用实例用于获取应用上下文
 app = create_app()

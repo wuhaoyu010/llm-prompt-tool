@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 def app():
     """创建测试用的Flask应用"""
     from app import create_app
-    from app.database import db
+    from src.backend.database import db
     
     # 使用临时数据库
     db_fd, db_path = tempfile.mkstemp(suffix='.db')
@@ -41,7 +41,7 @@ def client(app):
 @pytest.fixture
 def db_session(app):
     """提供数据库会话"""
-    from app.database import db
+    from src.backend.database import db
     with app.app_context():
         yield db.session
         db.session.rollback()

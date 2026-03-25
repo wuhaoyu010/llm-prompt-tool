@@ -1,5 +1,5 @@
-from app.database import db, TestCase, Defect
-from app.main import app
+from src.backend.database import db, TestCase, Defect
+from src.backend.main import app
 from collections import Counter
 
 with app.app_context():

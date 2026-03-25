@@ -12,8 +12,8 @@ class TestFormatPrompt:
     def test_format_prompt_basic(self, app):
         """测试基本格式化"""
         with app.app_context():
-            from app.database import GlobalPromptTemplate, Defect, DefectVersion
-            from app.main import format_prompt
+            from src.backend.database import GlobalPromptTemplate, Defect, DefectVersion
+            from src.backend.main import format_prompt
             
             # 创建模板
             template = GlobalPromptTemplate(
@@ -57,8 +57,8 @@ class TestCreatePreviewImage:
     def test_create_preview_no_file(self, app):
         """测试文件不存在的情况"""
         with app.app_context():
-            from app.database import Defect, DefectVersion, TestCase
-            from app.main import create_preview_image
+            from src.backend.database import Defect, DefectVersion, TestCase
+            from src.backend.main import create_preview_image
             
             # 创建测试用例
             defect = Defect(name='preview_test')
@@ -79,8 +79,8 @@ class TestCreatePreviewImage:
     def test_create_preview_with_image(self, app):
         """测试创建预览图"""
         with app.app_context():
-            from app.database import Defect, DefectVersion, TestCase, BoundingBox
-            from app.main import create_preview_image
+            from src.backend.database import Defect, DefectVersion, TestCase, BoundingBox
+            from src.backend.main import create_preview_image
             
             # 创建临时图片
             from PIL import Image
@@ -139,7 +139,7 @@ class TestRunMockLLM:
     
     def test_mock_llm_returns_results(self, app):
         """测试模拟LLM返回结果"""
-        from app.main import run_mock_llm
+        from src.backend.main import run_mock_llm
         
         result = run_mock_llm('test prompt', 3)
         
@@ -155,7 +155,7 @@ class TestRunRealLLM:
     def test_real_llm_no_api_key(self, app):
         """测试无API Key的情况"""
         with app.app_context():
-            from app.main import run_real_llm
+            from src.backend.main import run_real_llm
             
             result = run_real_llm('test-model', 'prompt', '/fake/path.jpg', 2)
             
@@ -166,8 +166,8 @@ class TestRunRealLLM:
     def test_real_llm_with_api_key(self, app):
         """测试有API Key的情况"""
         with app.app_context():
-            from app.database import LLMConfig
-            from app.main import run_real_llm
+            from src.backend.database import LLMConfig
+            from src.backend.main import run_real_llm
             
             # 设置API Key
             config = LLMConfig.query.first()
@@ -201,8 +201,8 @@ class TestSSHConnection:
             mock_stdout.read.return_value = b'/home/user'
             mock_ssh.exec_command.return_value = (None, mock_stdout, None)
             
-            from app.main import test_ssh_connection
-            from app.database import LLMConfig
+            from src.backend.main import test_ssh_connection
+            from src.backend.database import LLMConfig
             
             config = LLMConfig(
                 ssh_host='localhost',
@@ -223,8 +223,8 @@ class TestSSHConnection:
             mock_client.return_value = mock_ssh
             mock_ssh.connect.side_effect = Exception('Connection refused')
             
-            from app.main import test_ssh_connection
-            from app.database import LLMConfig
+            from src.backend.main import test_ssh_connection
+            from src.backend.database import LLMConfig
             
             config = LLMConfig(
                 ssh_host='invalid.host',
@@ -246,8 +246,8 @@ class TestTrueno3Sync:
     def test_update_defect_definitions_new(self, mock_ssh, app):
         """测试添加新缺陷定义"""
         with app.app_context():
-            from app.database import Defect, DefectVersion
-            from app.main import update_trueno3_defect_definitions
+            from src.backend.database import Defect, DefectVersion
+            from src.backend.main import update_trueno3_defect_definitions
             
             # 准备mock
             mock_ssh_instance = MagicMock()

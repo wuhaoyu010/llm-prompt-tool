@@ -2,7 +2,7 @@
 import pytest
 import json
 from io import BytesIO
-from app.database import db, LLMConfig, Defect, DefectVersion, TestCase, BoundingBox
+from src.backend.database import db, LLMConfig, Defect, DefectVersion, TestCase, BoundingBox
 
 
 class TestGlobalTemplateAPI:
@@ -12,7 +12,7 @@ class TestGlobalTemplateAPI:
         """测试获取全局模板"""
         with app.app_context():
             # 创建默认模板
-            from app.database import GlobalPromptTemplate
+            from src.backend.database import GlobalPromptTemplate
             template = GlobalPromptTemplate(
                 name='default',
                 template_text='Test template {defect_cn}'
@@ -28,7 +28,7 @@ class TestGlobalTemplateAPI:
     def test_update_global_template(self, client, app):
         """测试更新全局模板"""
         with app.app_context():
-            from app.database import GlobalPromptTemplate
+            from src.backend.database import GlobalPromptTemplate
             template = GlobalPromptTemplate(
                 name='default',
                 template_text='Original'
@@ -313,7 +313,7 @@ class TestTestCaseAPI:
         assert response.status_code == 200
         
         # 验证已删除
-        from app.database import TestCase
+        from src.backend.database import TestCase
         with app.app_context():
             deleted = TestCase.query.get(test_case_id)
             assert deleted is None

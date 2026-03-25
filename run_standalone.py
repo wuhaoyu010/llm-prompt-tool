@@ -17,7 +17,7 @@ if getattr(sys, 'frozen', False):
     # 切换工作目录到 EXE 所在位置（数据库会在此创建）
     os.chdir(os.path.dirname(sys.executable))
 
-from app.main import app
+from src.backend.main import app
 
 print("=" * 50)
 print("  Prompt Tool - 缺陷检测提示词管理工具")

@@ -1,6 +1,6 @@
 """数据库模型单元测试"""
 import pytest
-from app.database import (
+from src.backend.database import (
     db, LLMConfig, Trueno3Config, GlobalPromptTemplate,
     Defect, DefectVersion, TestCase, BoundingBox, TestResult
 )
