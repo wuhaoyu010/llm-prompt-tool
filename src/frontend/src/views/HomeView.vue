@@ -492,6 +492,10 @@ watch(currentDefect, (defect) => {
 watch(() => defectStore.currentDefect?.id, async (defectId) => {
   if (defectId) {
     await annotationStore.fetchTestCases(defectId)
+    // 默认选择第一张图片
+    if (annotationStore.testCases.length > 0 && !annotationStore.currentTestCaseId) {
+      annotationStore.selectTestCase(annotationStore.testCases[0].id)
+    }
   }
 }, { immediate: true })
 

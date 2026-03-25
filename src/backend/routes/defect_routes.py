@@ -261,6 +261,7 @@ def get_defect_details(defect_id):
     """获取缺陷详情"""
     from src.backend.services.image_service import create_preview_image
     from flask import current_app
+    from src.backend.database import BoundingBox
 
     defect = Defect.query.get_or_404(defect_id)
     versions = DefectVersion.query.filter_by(defect_id=defect.id).order_by(DefectVersion.version.desc()).all()
@@ -271,6 +272,8 @@ def get_defect_details(defect_id):
         tc_data = tc.to_dict()
         tc_data['filepath'] = f"uploads/{tc.filename}"
         tc_data['preview_url'] = create_preview_image(tc, current_app.config['UPLOAD_FOLDER']) or tc_data['filepath']
+        # 添加标注框数量
+        tc_data['annotation_count'] = BoundingBox.query.filter_by(test_case_id=tc.id).count()
         test_cases_data.append(tc_data)
 
     return jsonify({
