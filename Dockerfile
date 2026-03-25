@@ -24,8 +24,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY app/ ./app/
-COPY init_db.py .
-COPY migrate_db.py .
+COPY scripts/migrations/init_db.py .
+COPY scripts/migrations/migrate_db.py .
 COPY run_standalone.py .
 
 # Create necessary directories with proper permissions
