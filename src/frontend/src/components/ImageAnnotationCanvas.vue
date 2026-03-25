@@ -211,7 +211,29 @@
         ></div>
       </div>
     </div>
-    
+
+    <!-- Minimap 小地图 -->
+    <div
+      v-if="props.imageUrl"
+      class="minimap"
+      :class="{ collapsed: minimapCollapsed }"
+    >
+      <div class="minimap-header">
+        <span class="minimap-title">导航</span>
+        <button class="minimap-toggle" @click="minimapCollapsed = !minimapCollapsed">
+          <span class="material-icons">{{ minimapCollapsed ? 'expand_less' : 'expand_more' }}</span>
+        </button>
+      </div>
+      <canvas
+        v-show="!minimapCollapsed"
+        ref="minimapCanvas"
+        class="minimap-canvas"
+        :width="minimapSize.width"
+        :height="minimapSize.height"
+        @click="handleMinimapClick"
+      />
+    </div>
+
     <!-- 标签编辑器弹窗 -->
     <div v-if="showLabelEditor" class="label-editor-modal" @click.self="closeLabelEditor">
       <div class="label-editor-content">
@@ -265,6 +287,18 @@ const selectedBox = ref(null)
 const naturalSize = ref({ width: 0, height: 0 })
 const scrollPosition = ref({ x: 0, y: 0 }) // 追踪滚动位置
 const wrapperSize = ref({ width: 0, height: 0 }) // 追踪容器尺寸
+
+// Minimap 状态
+const minimapCanvas = ref(null)
+const minimapCollapsed = ref(false)
+const minimapSize = computed(() => {
+  // 根据图片方向决定 minimap 尺寸
+  if (!naturalSize.value.width) return { width: 150, height: 100 }
+  const ratio = naturalSize.value.width / naturalSize.value.height
+  return ratio > 1
+    ? { width: 150, height: Math.round(150 / ratio) }
+    : { width: Math.round(100 * ratio), height: 100 }
+})
 
 // 预设标签
 const presetLabel = ref('')
@@ -519,6 +553,9 @@ function drawAnnotations() {
 
     ctx.setLineDash([])
   }
+
+  // 绘制 Minimap
+  drawMinimap()
 }
 
 // 绘制角点标记
@@ -558,6 +595,72 @@ function drawCenterMark(ctx, x, y, w, h) {
   ctx.moveTo(cx, cy - markSize)
   ctx.lineTo(cx, cy + markSize)
   ctx.stroke()
+}
+
+// 绘制 Minimap
+function drawMinimap() {
+  const canvas = minimapCanvas.value
+  if (!canvas || !props.imageUrl) return
+
+  const ctx = canvas.getContext('2d')
+  const { width: mw, height: mh } = minimapSize.value
+
+  ctx.clearRect(0, 0, mw, mh)
+
+  // 计算缩略图比例
+  const scaleX = mw / naturalSize.value.width
+  const scaleY = mh / naturalSize.value.height
+
+  // 绘制图片缩略图
+  if (imageEl.value) {
+    ctx.drawImage(imageEl.value, 0, 0, mw, mh)
+  }
+
+  // 绘制所有标注框
+  ctx.strokeStyle = '#EF4444'
+  ctx.fillStyle = 'rgba(239, 68, 68, 0.3)'
+  ctx.lineWidth = 1
+  boxes.value.forEach(box => {
+    const x = normToPixel(box.x, naturalSize.value.width) * scaleX
+    const y = normToPixel(box.y, naturalSize.value.height) * scaleY
+    const w = normToPixel(box.width, naturalSize.value.width) * scaleX
+    const h = normToPixel(box.height, naturalSize.value.height) * scaleY
+    ctx.fillRect(x, y, w, h)
+    ctx.strokeRect(x, y, w, h)
+  })
+
+  // 绘制视口位置
+  ctx.strokeStyle = '#2563EB'
+  ctx.lineWidth = 2
+  const viewW = (wrapperSize.value.width / scale.value) * scaleX
+  const viewH = (wrapperSize.value.height / scale.value) * scaleY
+  const viewX = (scrollPosition.value.x / scale.value) * scaleX
+  const viewY = (scrollPosition.value.y / scale.value) * scaleY
+  ctx.strokeRect(viewX, viewY, Math.min(viewW, mw), Math.min(viewH, mh))
+}
+
+// 点击 Minimap 跳转
+function handleMinimapClick(e) {
+  if (!canvasWrapper.value || !naturalSize.value.width) return
+
+  const rect = minimapCanvas.value.getBoundingClientRect()
+  const clickX = e.clientX - rect.left
+  const clickY = e.clientY - rect.top
+
+  const { width: mw, height: mh } = minimapSize.value
+  const scaleX = mw / naturalSize.value.width
+  const scaleY = mh / naturalSize.value.height
+
+  // 计算点击位置对应的图片坐标
+  const targetX = clickX / scaleX
+  const targetY = clickY / scaleY
+
+  // 滚动到该位置（居中）
+  const scrollX = targetX * scale.value - wrapperSize.value.width / 2
+  const scrollY = targetY * scale.value - wrapperSize.value.height / 2
+
+  canvasWrapper.value.scrollTo(scrollX, scrollY)
+  updateScrollPosition()
 }
 
 // 获取鼠标在 Canvas 上的坐标
@@ -913,6 +1016,7 @@ function updateScrollPosition() {
       x: canvasWrapper.value.scrollLeft,
       y: canvasWrapper.value.scrollTop
     }
+    drawMinimap()
   }
 }
 
@@ -1486,5 +1590,53 @@ onUnmounted(() => {
   font-family: inherit;
   font-size: 11px;
   color: var(--text-primary);
+}
+
+/* Minimap 样式 */
+.minimap {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+}
+
+.minimap.collapsed .minimap-canvas {
+  display: none;
+}
+
+.minimap-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.minimap-title {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.minimap-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.minimap-toggle .material-icons {
+  font-size: 16px;
+}
+
+.minimap-canvas {
+  display: block;
+  cursor: pointer;
 }
 </style>
