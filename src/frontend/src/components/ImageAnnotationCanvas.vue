@@ -340,7 +340,7 @@ const containerStyle = computed(() => {
   }
 })
 
-// 计算选中框的调整手柄位置（使用固定像素大小）
+// 计算选中框的调整手柄位置（手柄在框外侧）
 const resizeHandlePositions = computed(() => {
   if (!selectedBox.value || !naturalSize.value.width) return []
 
@@ -358,6 +358,8 @@ const resizeHandlePositions = computed(() => {
 
   // 手柄大小（屏幕固定像素）
   const handleSize = 10
+  // 手柄距离框边的外延距离
+  const handleOffset = 12
 
   // 使用响应式滚动位置
   const scrollLeft = scrollPosition.value.x
@@ -370,30 +372,31 @@ const resizeHandlePositions = computed(() => {
   const scaledHeight = naturalSize.value.height * scale.value
 
   // 图片容器的左上角在 wrapper 中的位置（居中偏移）
-  const containerOffsetX = Math.max(0, (wrapperWidth - scaledWidth) / 2 - 20) // 减去 wrapper padding 20px
+  const containerOffsetX = Math.max(0, (wrapperWidth - scaledWidth) / 2 - 20)
   const containerOffsetY = Math.max(0, (wrapperHeight - scaledHeight) / 2 - 20)
 
-  // 计算手柄在屏幕上的位置
+  // 计算手柄在屏幕上的位置（框的屏幕坐标）
   const screenX = containerOffsetX + x * scale.value - scrollLeft
   const screenY = containerOffsetY + y * scale.value - scrollTop
   const screenW = w * scale.value
   const screenH = h * scale.value
 
+  // 手柄位置：在框角点外侧 handleOffset 像素
   // 小框只有4个角点，大框有8个
   const handles = isSmallBox ? [
-    { name: 'nw', cx: screenX, cy: screenY },
-    { name: 'ne', cx: screenX + screenW, cy: screenY },
-    { name: 'se', cx: screenX + screenW, cy: screenY + screenH },
-    { name: 'sw', cx: screenX, cy: screenY + screenH }
+    { name: 'nw', cx: screenX - handleOffset, cy: screenY - handleOffset },
+    { name: 'ne', cx: screenX + screenW + handleOffset, cy: screenY - handleOffset },
+    { name: 'se', cx: screenX + screenW + handleOffset, cy: screenY + screenH + handleOffset },
+    { name: 'sw', cx: screenX - handleOffset, cy: screenY + screenH + handleOffset }
   ] : [
-    { name: 'nw', cx: screenX, cy: screenY },
-    { name: 'n', cx: screenX + screenW/2, cy: screenY },
-    { name: 'ne', cx: screenX + screenW, cy: screenY },
-    { name: 'e', cx: screenX + screenW, cy: screenY + screenH/2 },
-    { name: 'se', cx: screenX + screenW, cy: screenY + screenH },
-    { name: 's', cx: screenX + screenW/2, cy: screenY + screenH },
-    { name: 'sw', cx: screenX, cy: screenY + screenH },
-    { name: 'w', cx: screenX, cy: screenY + screenH/2 }
+    { name: 'nw', cx: screenX - handleOffset, cy: screenY - handleOffset },
+    { name: 'n', cx: screenX + screenW / 2, cy: screenY - handleOffset },
+    { name: 'ne', cx: screenX + screenW + handleOffset, cy: screenY - handleOffset },
+    { name: 'e', cx: screenX + screenW + handleOffset, cy: screenY + screenH / 2 },
+    { name: 'se', cx: screenX + screenW + handleOffset, cy: screenY + screenH + handleOffset },
+    { name: 's', cx: screenX + screenW / 2, cy: screenY + screenH + handleOffset },
+    { name: 'sw', cx: screenX - handleOffset, cy: screenY + screenH + handleOffset },
+    { name: 'w', cx: screenX - handleOffset, cy: screenY + screenH / 2 }
   ]
 
   return handles.map(handle => ({
