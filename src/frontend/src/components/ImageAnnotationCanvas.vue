@@ -177,7 +177,7 @@
         />
         
         <!-- Canvas 标注层 -->
-        <canvas 
+        <canvas
           ref="canvasEl"
           class="annotation-canvas"
           :width="canvasSize.width"
@@ -187,6 +187,21 @@
           @mouseup="handleMouseUp"
           @mouseleave="handleMouseUp"
         ></canvas>
+
+        <!-- 选中框的调整手柄层（HTML实现，固定大小不受缩放影响） -->
+        <div
+          v-if="selectedBox && currentTool === 'select'"
+          class="resize-handles-layer"
+        >
+          <div
+            v-for="handle in resizeHandlePositions"
+            :key="handle.name"
+            class="resize-handle"
+            :style="handle.style"
+            :data-handle="handle.name"
+            @mousedown.stop="startResize($event, handle.name)"
+          ></div>
+        </div>
         
         <!-- 绘制时的提示 -->
         <div v-if="currentTool !== 'select'" class="drawing-hint">
@@ -322,6 +337,54 @@ const containerStyle = computed(() => {
   }
 })
 
+// 计算选中框的调整手柄位置（使用固定像素大小）
+const resizeHandlePositions = computed(() => {
+  if (!selectedBox.value || !naturalSize.value.width) return []
+
+  const box = selectedBox.value
+  const x = normToPixel(box.x, naturalSize.value.width)
+  const y = normToPixel(box.y, naturalSize.value.height)
+  const w = normToPixel(box.width, naturalSize.value.width)
+  const h = normToPixel(box.height, naturalSize.value.height)
+
+  // 基于屏幕像素判断是否为小框
+  const screenBoxW = w * scale.value
+  const screenBoxH = h * scale.value
+  const isSmallBox = screenBoxW < 40 || screenBoxH < 40
+
+  // 手柄大小（屏幕固定像素）
+  const handleSize = 10
+
+  // 小框只有4个角点，大框有8个
+  const handles = isSmallBox ? [
+    { name: 'nw', cx: x, cy: y },
+    { name: 'ne', cx: x + w, cy: y },
+    { name: 'se', cx: x + w, cy: y + h },
+    { name: 'sw', cx: x, cy: y + h }
+  ] : [
+    { name: 'nw', cx: x, cy: y },
+    { name: 'n', cx: x + w/2, cy: y },
+    { name: 'ne', cx: x + w, cy: y },
+    { name: 'e', cx: x + w, cy: y + h/2 },
+    { name: 'se', cx: x + w, cy: y + h },
+    { name: 's', cx: x + w/2, cy: y + h },
+    { name: 'sw', cx: x, cy: y + h },
+    { name: 'w', cx: x, cy: y + h/2 }
+  ]
+
+  return handles.map(handle => ({
+    name: handle.name,
+    style: {
+      left: `${handle.cx}px`,
+      top: `${handle.cy}px`,
+      width: `${handleSize}px`,
+      height: `${handleSize}px`,
+      marginLeft: `${-handleSize/2}px`,
+      marginTop: `${-handleSize/2}px`
+    }
+  }))
+})
+
 // 将归一化坐标转换为像素坐标
 function normToPixel(normValue, dimension) {
   return (normValue / 999) * dimension
@@ -402,9 +465,8 @@ function drawAnnotations() {
       ctx.fillText(box.label, x, y - 5 / scale.value)
     }
 
-    // 选中状态绘制控制点
+    // 选中状态绘制控制点（使用 HTML 手柄，不再在 canvas 绘制）
     if (isSelected) {
-      drawResizeHandles(ctx, x, y, w, h)
       drawCenterMark(ctx, x, y, w, h)
     }
   })
@@ -467,47 +529,6 @@ function drawCenterMark(ctx, x, y, w, h) {
   ctx.stroke()
 }
 
-// 绘制调整大小的控制点
-function drawResizeHandles(ctx, x, y, w, h) {
-  // 手柄大小基于屏幕像素，保持固定视觉大小
-  // 除以 scale 使得放大图片时手柄不会跟着变大
-  const baseHandleSize = 5 // 屏幕上固定的像素大小
-  const handleSize = baseHandleSize / scale.value
-
-  // 小框阈值（基于屏幕像素）
-  const screenBoxW = w * scale.value
-  const screenBoxH = h * scale.value
-  const isSmallBox = screenBoxW < 40 || screenBoxH < 40
-
-  // 小框只绘制4个角点，大框绘制全部8个
-  const handles = isSmallBox ? [
-    { x: x, y: y },           // 左上
-    { x: x + w, y: y },       // 右上
-    { x: x + w, y: y + h },   // 右下
-    { x: x, y: y + h }        // 左下
-  ] : [
-    { x: x, y: y },           // 左上
-    { x: x + w/2, y: y },     // 上中
-    { x: x + w, y: y },       // 右上
-    { x: x + w, y: y + h/2 }, // 右中
-    { x: x + w, y: y + h },   // 右下
-    { x: x + w/2, y: y + h }, // 下中
-    { x: x, y: y + h },       // 左下
-    { x: x, y: y + h/2 }      // 左中
-  ]
-
-  handles.forEach(handle => {
-    // 白色填充 + 红色边框的控制点
-    ctx.fillStyle = 'white'
-    ctx.strokeStyle = '#DC2626'
-    ctx.lineWidth = 1.5 / scale.value // 线宽也保持固定
-    ctx.beginPath()
-    ctx.arc(handle.x, handle.y, handleSize, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.stroke()
-  })
-}
-
 // 获取鼠标在 Canvas 上的坐标
 function getCanvasCoordinates(e) {
   const canvas = canvasEl.value
@@ -516,48 +537,6 @@ function getCanvasCoordinates(e) {
     x: (e.clientX - rect.left) / scale.value,
     y: (e.clientY - rect.top) / scale.value
   }
-}
-
-// 检查是否点击了控制点
-function getResizeHandle(x, y, box) {
-  const bx = normToPixel(box.x, naturalSize.value.width)
-  const by = normToPixel(box.y, naturalSize.value.height)
-  const bw = normToPixel(box.width, naturalSize.value.width)
-  const bh = normToPixel(box.height, naturalSize.value.height)
-
-  // 手柄检测半径基于屏幕像素，保持固定
-  const baseHandleRadius = 8 // 屏幕上固定的点击区域
-  const handleRadius = baseHandleRadius / scale.value
-
-  // 小框阈值（基于屏幕像素）
-  const screenBoxW = bw * scale.value
-  const screenBoxH = bh * scale.value
-  const isSmallBox = screenBoxW < 40 || screenBoxH < 40
-
-  // 小框只有4个角点，大框有8个
-  const handles = isSmallBox ? [
-    { name: 'nw', cx: bx, cy: by },
-    { name: 'ne', cx: bx + bw, cy: by },
-    { name: 'se', cx: bx + bw, cy: by + bh },
-    { name: 'sw', cx: bx, cy: by + bh }
-  ] : [
-    { name: 'nw', cx: bx, cy: by },
-    { name: 'n', cx: bx + bw/2, cy: by },
-    { name: 'ne', cx: bx + bw, cy: by },
-    { name: 'e', cx: bx + bw, cy: by + bh/2 },
-    { name: 'se', cx: bx + bw, cy: by + bh },
-    { name: 's', cx: bx + bw/2, cy: by + bh },
-    { name: 'sw', cx: bx, cy: by + bh },
-    { name: 'w', cx: bx, cy: by + bh/2 }
-  ]
-
-  for (const handle of handles) {
-    const dist = Math.sqrt((x - handle.cx) ** 2 + (y - handle.cy) ** 2)
-    if (dist <= handleRadius) {
-      return handle.name
-    }
-  }
-  return null
 }
 
 // 检查是否点击了标注框
@@ -584,6 +563,91 @@ function setTool(tool) {
     selectedBox.value = null
   }
   drawAnnotations()
+}
+
+// 开始调整大小（从 HTML 手柄触发）
+function startResize(e, handleName) {
+  e.preventDefault()
+  isResizing.value = true
+  resizeHandle.value = handleName
+  const coords = getCanvasCoordinates(e)
+  dragStart.value = { x: coords.x, y: coords.y }
+  dragBoxStart.value = { ...selectedBox.value }
+
+  // 添加全局鼠标事件监听
+  document.addEventListener('mousemove', handleResizeMove)
+  document.addEventListener('mouseup', stopResize)
+}
+
+function handleResizeMove(e) {
+  if (!isResizing.value || !selectedBox.value || !dragBoxStart.value) return
+
+  const canvas = canvasEl.value
+  if (!canvas) return
+
+  const rect = canvas.getBoundingClientRect()
+  const x = (e.clientX - rect.left) / scale.value
+  const y = (e.clientY - rect.top) / scale.value
+
+  const dx = pixelToNorm((x - dragStart.value.x), naturalSize.value.width)
+  const dy = pixelToNorm((y - dragStart.value.y), naturalSize.value.height)
+
+  let newBox = { ...dragBoxStart.value }
+
+  switch (resizeHandle.value) {
+    case 'se':
+      newBox.width = Math.max(10, Math.min(999 - newBox.x, dragBoxStart.value.width + dx))
+      newBox.height = Math.max(10, Math.min(999 - newBox.y, dragBoxStart.value.height + dy))
+      break
+    case 'nw':
+      const newW = Math.max(10, dragBoxStart.value.width - dx)
+      const newH = Math.max(10, dragBoxStart.value.height - dy)
+      newBox.x = Math.max(0, Math.min(999 - newW, dragBoxStart.value.x + dx))
+      newBox.y = Math.max(0, Math.min(999 - newH, dragBoxStart.value.y + dy))
+      newBox.width = newW
+      newBox.height = newH
+      break
+    case 'ne':
+      newBox.width = Math.max(10, Math.min(999 - newBox.x, dragBoxStart.value.width + dx))
+      const newH2 = Math.max(10, dragBoxStart.value.height - dy)
+      newBox.y = Math.max(0, Math.min(999 - newH2, dragBoxStart.value.y + dy))
+      newBox.height = newH2
+      break
+    case 'sw':
+      const newW2 = Math.max(10, dragBoxStart.value.width - dx)
+      newBox.x = Math.max(0, Math.min(999 - newW2, dragBoxStart.value.x + dx))
+      newBox.width = newW2
+      newBox.height = Math.max(10, Math.min(999 - newBox.y, dragBoxStart.value.height + dy))
+      break
+    case 'e':
+      newBox.width = Math.max(10, Math.min(999 - newBox.x, dragBoxStart.value.width + dx))
+      break
+    case 'w':
+      const newW3 = Math.max(10, dragBoxStart.value.width - dx)
+      newBox.x = Math.max(0, Math.min(999 - newW3, dragBoxStart.value.x + dx))
+      newBox.width = newW3
+      break
+    case 's':
+      newBox.height = Math.max(10, Math.min(999 - newBox.y, dragBoxStart.value.height + dy))
+      break
+    case 'n':
+      const newH3 = Math.max(10, dragBoxStart.value.height - dy)
+      newBox.y = Math.max(0, Math.min(999 - newH3, dragBoxStart.value.y + dy))
+      newBox.height = newH3
+      break
+  }
+
+  selectedBox.value = newBox
+  annotationStore.updateBox(selectedBox.value)
+  drawAnnotations()
+}
+
+function stopResize() {
+  isResizing.value = false
+  resizeHandle.value = null
+  dragBoxStart.value = null
+  document.removeEventListener('mousemove', handleResizeMove)
+  document.removeEventListener('mouseup', stopResize)
 }
 
 // 鼠标按下
@@ -615,17 +679,7 @@ function handleMouseDown(e) {
 
   // 选择模式
   if (currentTool.value === 'select') {
-    // 检查是否点击了控制点
-    if (selectedBox.value) {
-      const handle = getResizeHandle(x, y, selectedBox.value)
-      if (handle) {
-        isResizing.value = true
-        resizeHandle.value = handle
-        dragStart.value = { x, y }
-        dragBoxStart.value = { ...selectedBox.value }
-        return
-      }
-    }
+    // 手柄调整现在使用 HTML 元素，不在这里处理
 
     // 检查是否点击了标注框
     const clickedBox = getBoxAt(x, y)
@@ -1125,6 +1179,54 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   cursor: crosshair;
+}
+
+/* 调整手柄层 */
+.resize-handles-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.resize-handle {
+  position: absolute;
+  background: white;
+  border: 2px solid #DC2626;
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s ease;
+}
+
+.resize-handle:hover {
+  transform: scale(1.2);
+  background: #FEF2F2;
+}
+
+/* 手柄光标样式 */
+.resize-handle[data-handle="nw"],
+.resize-handle[data-handle="se"] {
+  cursor: nwse-resize;
+}
+
+.resize-handle[data-handle="ne"],
+.resize-handle[data-handle="sw"] {
+  cursor: nesw-resize;
+}
+
+.resize-handle[data-handle="n"],
+.resize-handle[data-handle="s"] {
+  cursor: ns-resize;
+}
+
+.resize-handle[data-handle="e"],
+.resize-handle[data-handle="w"] {
+  cursor: ew-resize;
 }
 
 .drawing-hint {
