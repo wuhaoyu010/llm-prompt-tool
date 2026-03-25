@@ -90,10 +90,12 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUIStore } from '../stores/ui'
 import { useDefectStore } from '../stores/defect'
+import { useAnnotationStore } from '../stores/annotation'
 import { axiosInstance } from '../api/axios'
 
 const uiStore = useUIStore()
 const defectStore = useDefectStore()
+const annotationStore = useAnnotationStore()
 
 // ESC键关闭模态框
 function handleEscKey(e) {
@@ -197,6 +199,9 @@ async function executeImport() {
       uploadProgress.value = Math.round((uploaded / total) * 100)
       uploadStatus.value = `上传中... ${uploaded}/${total}`
     }
+
+    // 刷新测试用例列表以显示新上传的缩略图
+    await annotationStore.fetchTestCases(defectId)
 
     uiStore.notify(`成功导入 ${total} 张图片`, 'success', '导入完成')
     close()
