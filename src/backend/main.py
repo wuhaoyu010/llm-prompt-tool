@@ -33,13 +33,12 @@ def create_app():
 
     # 模板和静态文件路径（打包后在 _internal 目录）
     if getattr(sys, 'frozen', False):
-        template_folder = os.path.join(sys._MEIPASS, 'app', 'templates')
-        static_folder = os.path.join(sys._MEIPASS, 'app', 'static')
+        # PyInstaller 打包后，文件在 _internal/src/backend/
+        static_folder = os.path.join(sys._MEIPASS, 'src', 'backend', 'static')
     else:
-        template_folder = os.path.join(app_dir, 'templates')
         static_folder = os.path.join(app_dir, 'static')
 
-    app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+    app = Flask(__name__, static_folder=static_folder)
     app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(data_dir, 'prompt_tool_v2.db')}"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = os.path.join(data_dir, 'uploads')
