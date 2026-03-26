@@ -9,19 +9,26 @@ block_cipher = None
 project_root = os.path.dirname(os.path.abspath(SPEC))
 
 a = Analysis(
-    ['run_standalone.py'],
+    [os.path.join(project_root, 'scripts', 'run_standalone.py')],
     pathex=[project_root],
     binaries=[],
     datas=[
-        # 包含 backend 模块的所有文件
-        (os.path.join(project_root, 'src', 'backend', '*.py'), 'app'),
-        (os.path.join(project_root, 'src', 'backend', 'templates'), 'app/templates'),
-        (os.path.join(project_root, 'src', 'backend', 'static'), 'app/static'),
+        # 包含 backend 模块
+        (os.path.join(project_root, 'src', 'backend'), 'src/backend'),
+        # 包含前端构建文件
+        (os.path.join(project_root, 'src', 'backend', 'static', 'vue-dist'), 'src/backend/static/vue-dist'),
     ],
     hiddenimports=[
         'src.backend',
         'src.backend.main',
         'src.backend.database',
+        'src.backend.routes',
+        'src.backend.routes.defect_routes',
+        'src.backend.routes.config_routes',
+        'src.backend.routes.task_routes',
+        'src.backend.services',
+        'src.backend.services.llm_service',
+        'src.backend.services.image_service',
         'flask',
         'flask_sqlalchemy',
         'PIL',
@@ -32,6 +39,8 @@ a = Analysis(
         'cryptography',
         'bcrypt',
         'nacl',
+        'cv2',
+        'openai',
     ],
     excludes=[
         'tkinter',
