@@ -105,13 +105,19 @@ def format_prompt(defect_version, boxes_str):
         格式化后的 Prompt 字符串
     """
     template = GlobalPromptTemplate.query.first().template_text
-    return template.format(
+    print(f"[DEBUG format_prompt] defect_cn: {defect_version.defect_cn}")
+    print(f"[DEBUG format_prompt] defect_class: {defect_version.defect_class}")
+    print(f"[DEBUG format_prompt] judgment_points: {defect_version.judgment_points}")
+    print(f"[DEBUG format_prompt] exclusions: {defect_version.exclusions}")
+    result = template.format(
         defect_cn=defect_version.defect_cn,
         defect_class=defect_version.defect_class,
         judgment_points=defect_version.judgment_points,
         exclusions=defect_version.exclusions,
         box_details=boxes_str
     )
+    print(f"[DEBUG format_prompt] 排除项部分: 排除项: {defect_version.exclusions}")
+    return result
 
 
 def run_real_llm(model_name, formatted_prompt, image_path, boxes_count):

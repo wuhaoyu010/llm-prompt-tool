@@ -363,16 +363,32 @@ def run_defect_inference(defect_id):
 
     defect = Defect.query.get_or_404(defect_id)
     data = request.json
+    print(f"[DEBUG] 收到推理请求, defect_id={defect_id}, data={data}")
+
     test_case_id = data.get('test_case_id')
     use_real_llm = data.get('use_real_llm', False)
     model_name = data.get('model', 'Pro/Qwen/Qwen2.5-VL-7B-Instruct')
 
     if not test_case_id:
+        print(f"[DEBUG] 错误: test_case_id 缺失")
         return jsonify({'error': 'test_case_id is required'}), 400
 
     test_case = TestCase.query.get_or_404(test_case_id)
+    print(f"[DEBUG] 找到测试用例: {test_case.id}, bounding_boxes count: {len(test_case.bounding_boxes) if test_case.bounding_boxes else 0}")
+
     if not test_case.bounding_boxes:
+        print(f"[DEBUG] 错误: 测试用例没有标注框")
         return jsonify({'error': 'Test case has no bounding boxes'}), 400
+
+    # 支持传入自定义缺陷描述（用于对比未保存的修改）
+    custom_defect_data = None
+    if all(key in data for key in ['defect_cn', 'defect_class', 'judgment_points', 'exclusions']):
+        custom_defect_data = {
+            'defect_cn': data['defect_cn'],
+            'defect_class': data['defect_class'],
+            'judgment_points': data['judgment_points'],
+            'exclusions': data['exclusions']
+        }
 
     version_id = data.get('version_id')
     if version_id:
@@ -382,6 +398,18 @@ def run_defect_inference(defect_id):
 
     if not defect_version:
         return jsonify({'error': 'No version found for this defect'}), 404
+
+    # 如果提供了自定义缺陷描述，创建临时版本对象用于推理
+    if custom_defect_data:
+        from types import SimpleNamespace
+        print(f"[DEBUG] 使用自定义缺陷描述: {custom_defect_data}")
+        defect_version = SimpleNamespace(
+            defect_cn=custom_defect_data['defect_cn'],
+            defect_class=custom_defect_data['defect_class'],
+            judgment_points=custom_defect_data['judgment_points'],
+            exclusions=custom_defect_data['exclusions'],
+            to_dict=lambda: custom_defect_data
+        )
 
     box_details_str = "ID|归一化坐标|标签|置信度\n---|---|---|---\n"
     boxes_for_llm = []

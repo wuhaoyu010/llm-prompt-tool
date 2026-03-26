@@ -151,9 +151,19 @@
                 </div>
               </div>
             </div>
-            <button class="btn btn-primary" @click="runVersionComparison" :disabled="!currentTestCaseId || versions.length < 2">
-              运行对比
-            </button>
+            <div class="comparison-action-wrapper">
+              <button class="btn btn-primary" @click="runVersionComparison" :disabled="!currentTestCaseId">
+                运行对比
+              </button>
+              <div v-if="!currentTestCaseId" class="comparison-hint">
+                <span class="material-icons hint-icon">info</span>
+                <span>请先选择一张图片</span>
+              </div>
+              <div v-else-if="hasDefectDataChanges" class="comparison-hint comparison-hint-info">
+                <span class="material-icons hint-icon">edit</span>
+                <span>将对比修改版 vs 当前保存版</span>
+              </div>
+            </div>
           </div>
         </div>
         <div class="card-body">
@@ -355,7 +365,7 @@ import { useAnnotationStore } from '../stores/annotation'
 import { useUIStore } from '../stores/ui'
 import { api, ApiError, TimeoutError, NetworkError } from '../api'
 import ThumbnailGallery from '../components/ThumbnailGallery.vue'
-import ImageAnnotationCanvas from '../components/ImageAnnotationCanvas.vue'
+import ImageAnnotationCanvas from '../components/ImageAnnotationKonva.vue'
 import SettingsModal from '../components/SettingsModal.vue'
 import BatchAnnotateModal from '../components/BatchAnnotateModal.vue'
 import GlobalTemplateModal from '../components/GlobalTemplateModal.vue'
@@ -473,11 +483,22 @@ const defectData = ref({
   exclusions: ''
 })
 
+// 检测缺陷描述是否有变更
+const hasDefectDataChanges = computed(() => {
+  if (!currentDefect.value) return false
+  return (
+    defectData.value.defect_cn !== (currentDefect.value.defect_cn || '') ||
+    defectData.value.defect_class !== (currentDefect.value.defect_class || '') ||
+    defectData.value.judgment_points !== (currentDefect.value.judgment_points || '') ||
+    defectData.value.exclusions !== (currentDefect.value.exclusions || '')
+  )
+})
+
 watch(currentDefect, (defect) => {
   inferenceComparisonResult.value = null
   regressionReport.value = null
   showAllRegressionResults.value = false
-  
+
   if (defect) {
     defectData.value = {
       defect_cn: defect.defect_cn || '',
@@ -602,18 +623,10 @@ async function runVersionComparison() {
     return
   }
 
-  if (versions.value.length < 2) {
-    uiStore.notify('至少需要两个版本才能进行对比', 'warning', '提示')
-    return
-  }
-
   if (llmHealthStatus.value === 'offline') {
     uiStore.notify('大模型服务连接异常，请检查服务状态', 'error', '错误')
     return
   }
-
-  const currentVerId = currentVersionId.value
-  const baseVerId = versions.value[0].id
 
   isRunningComparison.value = true
   inferenceComparisonResult.value = null
@@ -621,18 +634,49 @@ async function runVersionComparison() {
   try {
     uiStore.showLoading('正在对比...')
 
-    const [resultA, resultB] = await Promise.all([
-      api.post(`/api/defect/${currentDefect.value.id}/inference`, {
-        test_case_id: currentTestCaseId.value,
-        version_id: currentVerId,
-        model: inferenceModel.value || undefined
-      }),
-      api.post(`/api/defect/${currentDefect.value.id}/inference`, {
-        test_case_id: currentTestCaseId.value,
-        version_id: baseVerId,
-        model: inferenceModel.value || undefined
+    let resultA, resultB
+    const versionLabelA = hasDefectDataChanges.value ? '修改版' : `V${getVersionNumber(currentVersionId.value)}`
+    const versionLabelB = hasDefectDataChanges.value ? '当前版' : `V${getVersionNumber(currentVersionId.value)}`
+
+    if (hasDefectDataChanges.value) {
+      // 有变更：修改版 vs 当前保存的版本
+      console.log('[对比测试] 有修改，发送自定义缺陷描述:', {
+        defect_cn: defectData.value.defect_cn,
+        defect_class: defectData.value.defect_class,
+        judgment_points: defectData.value.judgment_points,
+        exclusions: defectData.value.exclusions
       })
-    ])
+      ;[resultA, resultB] = await Promise.all([
+        api.post(`/api/defect/${currentDefect.value.id}/inference`, {
+          test_case_id: currentTestCaseId.value,
+          model: inferenceModel.value || undefined,
+          // 传入修改后的自定义缺陷描述
+          defect_cn: defectData.value.defect_cn,
+          defect_class: defectData.value.defect_class,
+          judgment_points: defectData.value.judgment_points,
+          exclusions: defectData.value.exclusions
+        }),
+        api.post(`/api/defect/${currentDefect.value.id}/inference`, {
+          test_case_id: currentTestCaseId.value,
+          version_id: currentVersionId.value,
+          model: inferenceModel.value || undefined
+        })
+      ])
+    } else {
+      // 无变更：当前版本 vs 当前版本
+      ;[resultA, resultB] = await Promise.all([
+        api.post(`/api/defect/${currentDefect.value.id}/inference`, {
+          test_case_id: currentTestCaseId.value,
+          version_id: currentVersionId.value,
+          model: inferenceModel.value || undefined
+        }),
+        api.post(`/api/defect/${currentDefect.value.id}/inference`, {
+          test_case_id: currentTestCaseId.value,
+          version_id: currentVersionId.value,
+          model: inferenceModel.value || undefined
+        })
+      ])
+    }
 
     const resultAList = Array.isArray(resultA) ? resultA : (resultA.raw_response || resultA.results || [])
     const resultBList = Array.isArray(resultB) ? resultB : (resultB.raw_response || resultB.results || [])
@@ -646,8 +690,8 @@ async function runVersionComparison() {
     }
 
     inferenceComparisonResult.value = {
-      versionA: currentVerId,
-      versionB: baseVerId,
+      versionA: versionLabelA,
+      versionB: versionLabelB,
       resultA: resultAList,
       resultB: resultBList,
       promptA: resultA.prompt_used || '',
@@ -658,6 +702,9 @@ async function runVersionComparison() {
     uiStore.notify('版本对比完成', 'success', '成功')
   } catch (error) {
     uiStore.hideLoading()
+    // 清除旧结果，避免显示过时数据
+    inferenceComparisonResult.value = null
+    console.error('[对比测试] 请求失败:', error)
     uiStore.notify('对比失败: ' + error.message, 'error', '错误')
   } finally {
     isRunningComparison.value = false
@@ -1374,6 +1421,39 @@ async function fetchLLMConfig() {
 .version-tag.base-version {
   background: rgba(34, 197, 94, 0.2);
   color: var(--success-color);
+}
+
+.comparison-action-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.comparison-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--warning-color, #f59e0b);
+  padding: 4px 8px;
+  background: rgba(245, 158, 11, 0.1);
+  border-radius: 4px;
+  animation: fadeIn 0.3s ease;
+}
+
+.comparison-hint-info {
+  color: var(--primary-color, #6366f1);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.comparison-hint .hint-icon {
+  font-size: 14px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .inference-comparison {
