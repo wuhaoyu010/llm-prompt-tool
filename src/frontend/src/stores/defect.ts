@@ -80,6 +80,15 @@ export const useDefectStore = defineStore('defect', () => {
     currentVersionId.value = versionId
   }
 
+  function updateCurrentDefect(data: Partial<any>): void {
+    if (currentDefect.value) {
+      currentDefect.value = {
+        ...currentDefect.value,
+        ...data
+      }
+    }
+  }
+
   return {
     defects,
     currentDefect,
@@ -90,6 +99,7 @@ export const useDefectStore = defineStore('defect', () => {
     selectDefect,
     fetchVersions,
     saveVersion,
-    setVersion
+    setVersion,
+    updateCurrentDefect
   }
 })
