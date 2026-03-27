@@ -122,7 +122,7 @@
           <div class="shortcut-title">视图操作</div>
           <div class="shortcut-item"><kbd>Z</kbd> 缩放到选中框</div>
           <div class="shortcut-item"><kbd>双击框</kbd> 缩放到该框</div>
-          <div class="shortcut-item"><kbd>滚轮</kbd> 缩放</div>
+          <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>滚轮</kbd> 缩放</div>
           <div class="shortcut-item"><kbd>双击画布</kbd> 适应屏幕</div>
         </div>
         <div class="shortcut-group">
@@ -514,6 +514,12 @@ function handleDoubleClick(e) {
 }
 
 function handleWheel(e) {
+  // 只有按下 Ctrl 键时才进行缩放
+  if (!e.evt.ctrlKey && !e.evt.metaKey) {
+    // 不阻止默认行为，允许页面滚动
+    return
+  }
+
   e.evt.preventDefault()
 
   const stage = stageRef.value?.getStage()
@@ -645,15 +651,10 @@ function handleDrop(e) {
 function handleKeyDown(e) {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
 
+  // Ctrl+Z/Y 由父组件根据焦点区域处理，这里不再处理
   if (e.ctrlKey || e.metaKey) {
-    if (e.key === 'z' || e.key === 'Z') {
-      e.preventDefault()
-      handleUndo()
-      return
-    }
-    if (e.key === 'y' || e.key === 'Y') {
-      e.preventDefault()
-      handleRedo()
+    if (e.key === 'z' || e.key === 'Z' || e.key === 'y' || e.key === 'Y') {
+      // 让事件冒泡到父组件处理
       return
     }
   }
@@ -725,7 +726,34 @@ function updateContainerSize() {
 }
 
 // Watchers
-watch(() => props.imageUrl, loadImage, { immediate: true })
+watch(() => props.imageUrl, (newUrl, oldUrl) => {
+  // 切换图片时清除选中状态，防止选中框被带到新图片
+  if (newUrl !== oldUrl) {
+    selectedBoxId.value = null
+    // 清除 transformer 绑定
+    nextTick(() => {
+      const transformer = transformerRef.value?.getNode()
+      if (transformer) {
+        transformer.nodes([])
+      }
+    })
+  }
+  loadImage()
+}, { immediate: true })
+
+// 当 boxes 变化时，验证选中 ID 是否仍然有效
+watch(boxes, (newBoxes) => {
+  if (selectedBoxId.value) {
+    const exists = newBoxes.some(b => b.id === selectedBoxId.value)
+    if (!exists) {
+      selectedBoxId.value = null
+      const transformer = transformerRef.value?.getNode()
+      if (transformer) {
+        transformer.nodes([])
+      }
+    }
+  }
+})
 
 watch(() => defectStore.currentDefect, (defect) => {
   if (defect && !presetLabel.value) {

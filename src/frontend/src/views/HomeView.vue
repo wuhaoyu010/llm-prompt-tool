@@ -1,37 +1,51 @@
 <template>
-  <div class="home-view">
+  <div class="home-view" @keydown="handleGlobalKeyDown">
     <!-- 缺陷详情编辑区 -->
-    <div class="card scroll-section" id="defect-section" v-if="currentDefect">
+    <div
+      class="card scroll-section"
+      id="defect-section"
+      v-if="currentDefect"
+      @mouseenter="focusArea = 'defect'"
+      @mouseleave="focusArea = null"
+    >
         <div class="card-header">
           <h2>{{ currentDefect.name }}</h2>
           <div class="header-actions">
             <select v-model="selectedVersionId" @change="changeVersion" class="version-select">
               <option v-for="v in versions" :key="v.id" :value="v.id">
-                版本 {{ v.version }} - {{ v.summary || '无描述' }}
+                V{{ v.version }}{{ v.summary ? ' - ' + v.summary : '' }}
               </option>
             </select>
-            <button class="btn btn-secondary btn-sm" @click="openGlobalTemplate">编辑全局模板</button>
-            <button class="btn btn-secondary btn-sm" @click="cancelEdit">取消修改</button>
-            <button class="btn btn-primary btn-sm" @click="publishVersion">发布新版本</button>
+            <button class="btn btn-ghost btn-sm" @click="cancelEdit" v-if="hasDefectDataChanges">取消</button>
+            <button class="btn btn-primary btn-sm" @click="saveDefectDescription" :disabled="!hasDefectDataChanges">保存修改</button>
+            <div class="dropdown">
+              <button class="btn btn-ghost btn-sm" @click="showDefectMenu = !showDefectMenu">
+                <span class="material-icons">more_horiz</span>
+              </button>
+              <div v-if="showDefectMenu" class="dropdown-menu">
+                <button @click="openGlobalTemplate(); showDefectMenu = false">编辑全局模板</button>
+                <button @click="publishVersion(); showDefectMenu = false">发布新版本</button>
+              </div>
+            </div>
           </div>
         </div>
-        
+
         <div class="editor-grid">
           <div class="editor-card">
-            <h4>DEFECT_CN (中文名称)</h4>
-            <textarea v-model="defectData.defect_cn" placeholder="输入中文名称..."></textarea>
+            <h4>DEFECT_CN</h4>
+            <textarea v-model="defectData.defect_cn" placeholder="中文名称..." @input="recordDefectHistory"></textarea>
           </div>
           <div class="editor-card">
-            <h4>DEFECT_CLASS (缺陷分类)</h4>
-            <textarea v-model="defectData.defect_class" placeholder="输入缺陷分类..."></textarea>
+            <h4>DEFECT_CLASS</h4>
+            <textarea v-model="defectData.defect_class" placeholder="缺陷分类..." @input="recordDefectHistory"></textarea>
           </div>
           <div class="editor-card">
-            <h4>JUDGMENT_POINTS (判断点)</h4>
-            <textarea v-model="defectData.judgment_points" placeholder="输入判断点..."></textarea>
+            <h4>JUDGMENT_POINTS</h4>
+            <textarea v-model="defectData.judgment_points" placeholder="判断点..." @input="recordDefectHistory"></textarea>
           </div>
           <div class="editor-card">
-            <h4>EXCLUSIONS (排除项)</h4>
-            <textarea v-model="defectData.exclusions" placeholder="输入排除项..."></textarea>
+            <h4>EXCLUSIONS</h4>
+            <textarea v-model="defectData.exclusions" placeholder="排除项..." @input="recordDefectHistory"></textarea>
           </div>
         </div>
       </div>
@@ -41,25 +55,43 @@
       </div>
       
       <!-- 图片标注区 -->
-      <div class="card scroll-section" id="annotation-section" v-if="currentDefect">
+      <div
+        class="card scroll-section"
+        id="annotation-section"
+        v-if="currentDefect"
+        @mouseenter="focusArea = 'canvas'"
+        @mouseleave="focusArea = null"
+      >
         <div class="card-header">
           <h2>图片标注</h2>
           <div class="header-actions">
-            <span class="stats">
-              共 {{ totalCount }} 张 | 正例 {{ positiveCount }} | 反例 {{ negativeCount }} | 已标注 {{ annotatedCount }}
-            </span>
-            <button class="btn btn-accent btn-sm" @click="openBatchAnnotate" title="批量缺陷自动标注">
-              <span class="material-icons">auto_awesome</span>
-              <span class="btn-text">批量标注</span>
-            </button>
-            <button class="btn btn-secondary btn-sm" @click="openBatchImport" title="批量导入图片">
-              <span class="material-icons">add_photo_alternate</span>
-              <span class="btn-text">批量导入</span>
-            </button>
-            <button class="btn btn-primary btn-sm" @click="saveAnnotations" :disabled="!isDirty" title="保存标注">
+            <span class="stats">{{ totalCount }}张 · 正{{ positiveCount }} · 反{{ negativeCount }} · 已标注{{ annotatedCount }}</span>
+            <button class="btn btn-primary btn-sm" @click="saveAnnotations" :disabled="!isDirty">
               <span class="material-icons">save</span>
               <span class="btn-text">保存</span>
             </button>
+            <div class="dropdown">
+              <button class="btn btn-ghost btn-sm" @click="showAnnotationMenu = !showAnnotationMenu" title="更多操作">
+                <span class="material-icons">more_horiz</span>
+              </button>
+              <div v-if="showAnnotationMenu" class="dropdown-menu dropdown-menu-right">
+                <button @click="openBatchAnnotate(); showAnnotationMenu = false">
+                  <span class="material-icons">auto_awesome</span> 批量标注
+                </button>
+                <button @click="openBatchImport(); showAnnotationMenu = false">
+                  <span class="material-icons">add_photo_alternate</span> 批量导入
+                </button>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-label">自动保存间隔</div>
+                <div class="autosave-options">
+                  <button v-for="opt in autoSaveOptions" :key="opt.value"
+                    :class="['autosave-option', { active: autoSaveInterval === opt.value }]"
+                    @click="autoSaveInterval = opt.value; startAutoSave(); showAnnotationMenu = false">
+                    {{ opt.label }}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="card-body">
@@ -101,69 +133,44 @@
       <!-- 实时推理对比区域 -->
       <div class="card scroll-section" id="inference-section" v-if="currentDefect">
         <div class="card-header">
-          <h2>实时推理对比</h2>
+          <h2>
+            实时推理对比
+            <span class="status-badge" :class="llmHealthStatus" :title="llmHealthText"></span>
+          </h2>
           <div class="header-actions">
-            <!-- LLM 状态指示器 -->
-            <div class="llm-status-indicator" :class="llmHealthStatus">
-              <span class="status-dot"></span>
-              <span class="status-text">{{ llmHealthText }}</span>
+            <div class="version-compare-compact">
+              <span class="version-tag">V{{ currentVersionNumber }}</span>
+              <span class="compare-sep">vs</span>
+              <span class="version-tag muted">V{{ baseVersionNumber }}</span>
             </div>
-            <button class="btn btn-secondary btn-sm" @click="checkLLMHealth" title="检测连通性">
-              <span class="material-icons">sync</span>
-            </button>
-            <!-- 版本对比标签 -->
-            <div class="version-compare-labels">
-              <span class="version-tag current-version">当前版本: V{{ currentVersionNumber }}</span>
-              <span class="compare-arrow">VS</span>
-              <span class="version-tag base-version">基准版本: V{{ baseVersionNumber }}</span>
-            </div>
-            <!-- 模型选择 -->
-            <div class="model-selector">
-              <label>模型:</label>
-              <div class="model-select-wrapper">
-                <input
-                  type="text"
-                  v-model="inferenceModelSearch"
-                  @focus="showInferenceModelDropdown = true"
-                  @blur="handleInferenceModelBlur"
-                  @keydown.enter.prevent="handleInferenceModelEnter"
-                  :placeholder="inferenceModel || '选择或输入模型'"
-                  class="model-input"
-                />
-                <button
-                  class="btn btn-icon"
-                  @click="fetchInferenceModels"
-                  :disabled="isLoadingInferenceModels"
-                  title="刷新模型列表"
+            <div class="model-select-wrapper">
+              <input
+                type="text"
+                v-model="inferenceModelSearch"
+                @focus="showInferenceModelDropdown = true"
+                @blur="handleInferenceModelBlur"
+                @keydown.enter.prevent="handleInferenceModelEnter"
+                :placeholder="inferenceModel || '选择模型...'"
+                class="model-input"
+              />
+              <button class="btn btn-icon" @click="fetchInferenceModels" :disabled="isLoadingInferenceModels" title="刷新模型列表">
+                <span class="material-icons" :class="{ 'spinning': isLoadingInferenceModels }">refresh</span>
+              </button>
+              <div v-if="showInferenceModelDropdown && filteredInferenceModels.length > 0" class="model-dropdown">
+                <div
+                  v-for="model in filteredInferenceModels"
+                  :key="model.id || model"
+                  class="model-option"
+                  :class="{ selected: inferenceModel === (model.id || model) }"
+                  @mousedown.prevent="selectInferenceModel(model.id || model)"
                 >
-                  <span class="material-icons" :class="{ 'spinning': isLoadingInferenceModels }">refresh</span>
-                </button>
-                <div v-if="showInferenceModelDropdown && filteredInferenceModels.length > 0" class="model-dropdown">
-                  <div
-                    v-for="model in filteredInferenceModels"
-                    :key="model.id || model"
-                    class="model-option"
-                    :class="{ selected: inferenceModel === (model.id || model) }"
-                    @mousedown.prevent="selectInferenceModel(model.id || model)"
-                  >
-                    <span class="model-name">{{ model.id || model }}</span>
-                  </div>
+                  {{ model.id || model }}
                 </div>
               </div>
             </div>
-            <div class="comparison-action-wrapper">
-              <button class="btn btn-primary" @click="runVersionComparison" :disabled="!currentTestCaseId">
-                运行对比
-              </button>
-              <div v-if="!currentTestCaseId" class="comparison-hint">
-                <span class="material-icons hint-icon">info</span>
-                <span>请先选择一张图片</span>
-              </div>
-              <div v-else-if="hasDefectDataChanges" class="comparison-hint comparison-hint-info">
-                <span class="material-icons hint-icon">edit</span>
-                <span>将对比修改版 vs 当前保存版</span>
-              </div>
-            </div>
+            <button class="btn btn-primary btn-sm" @click="runVersionComparison" :disabled="!currentTestCaseId">
+              运行对比
+            </button>
           </div>
         </div>
         <div class="card-body">
@@ -225,13 +232,13 @@
       </div>
       
       <!-- 回归测试报告区域 -->
-      <div class="card" v-if="currentDefect">
+      <div class="card scroll-section" v-if="currentDefect">
         <div class="card-header">
           <h2>回归测试报告</h2>
           <div class="header-actions">
-            <button class="btn btn-primary" @click="runRegressionTest" :disabled="isRunningRegression">
+            <button class="btn btn-primary btn-sm" @click="runRegressionTest" :disabled="isRunningRegression">
               <span v-if="isRunningRegression" class="material-icons spinning">sync</span>
-              <span>{{ isRunningRegression ? '运行中...' : '开始运行' }}</span>
+              <span>{{ isRunningRegression ? '运行中...' : '运行' }}</span>
             </button>
           </div>
         </div>
@@ -313,38 +320,43 @@
           </div>
           <div v-else class="empty-state">
             <span class="material-icons">assessment</span>
-            <p>点击"开始运行"对当前选中版本执行完整回归测试</p>
+            <p>点击"运行"对当前选中版本执行完整回归测试</p>
           </div>
         </div>
       </div>
-      
+
       <!-- 提示词修改历史 -->
-      <div class="card" v-if="currentDefect && versions.length > 0">
+      <div class="card scroll-section" v-if="currentDefect && versions.length > 0">
         <div class="card-header">
-          <h2>提示词修改历史</h2>
-          <button class="btn btn-secondary btn-sm" @click="exportHistory">
-            <span class="material-icons">download</span> 导出CSV
-          </button>
+          <h2>
+            修改历史
+            <span class="history-count">{{ versions.length }}</span>
+          </h2>
+          <div class="header-actions">
+            <button class="btn btn-ghost btn-sm" @click="exportHistory" title="导出CSV">
+              <span class="material-icons">download</span>
+            </button>
+          </div>
         </div>
         <div class="card-body">
           <table class="data-table">
             <thead>
               <tr>
-                <th>版本号</th>
+                <th>版本</th>
                 <th>修改人</th>
-                <th>修改摘要</th>
-                <th>创建时间</th>
-                <th>操作</th>
+                <th>摘要</th>
+                <th>时间</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="v in versions" :key="v.id">
                 <td>V{{ v.version }}</td>
                 <td>{{ v.modifier || 'system' }}</td>
-                <td>{{ v.summary || '无' }}</td>
+                <td>{{ v.summary || '-' }}</td>
                 <td>{{ formatDate(v.created_at) }}</td>
                 <td>
-                  <button class="btn btn-sm btn-secondary" @click="loadVersion(v.id)">加载</button>
+                  <button class="btn btn-sm btn-ghost" @click="loadVersion(v.id)">加载</button>
                 </td>
               </tr>
             </tbody>
@@ -388,7 +400,7 @@ const canvasHeight = ref(800)
 const selectedVersionId = ref(null)
 const batchSelectedIds = ref([])
 const selectedIds = ref([])
-const autoSaveInterval = ref(60000)
+const autoSaveInterval = ref(60000) // 默认1分钟
 const autoSaveTimer = ref(null)
 const isRunningRegression = ref(false)
 const regressionProgress = ref(0)
@@ -396,6 +408,12 @@ const regressionProgressText = ref('')
 const regressionReport = ref(null)
 const showAllRegressionResults = ref(false)
 const DEFAULT_VISIBLE_RESULTS = 5
+const autoSaveOptions = [
+  { label: '30秒', value: 30000 },
+  { label: '1分钟', value: 60000 },
+  { label: '5分钟', value: 300000 },
+  { label: '10分钟', value: 600000 }
+]
 
 const visibleRegressionDetails = computed(() => {
   if (!regressionReport.value?.details) return []
@@ -483,6 +501,88 @@ const defectData = ref({
   exclusions: ''
 })
 
+// 焦点区域追踪：'defect' | 'canvas' | null
+const focusArea = ref(null)
+const showDefectMenu = ref(false)
+const showAnnotationMenu = ref(false)
+
+// 缺陷描述撤销历史
+const defectHistory = ref([])
+const defectHistoryIndex = ref(-1)
+const isUndoRedo = ref(false) // 防止撤销/重做时触发历史记录
+
+// 记录缺陷描述历史
+function recordDefectHistory() {
+  if (isUndoRedo.value) return
+
+  // 截断后面的历史
+  if (defectHistoryIndex.value < defectHistory.value.length - 1) {
+    defectHistory.value = defectHistory.value.slice(0, defectHistoryIndex.value + 1)
+  }
+
+  // 添加新历史记录
+  defectHistory.value.push({
+    defect_cn: defectData.value.defect_cn,
+    defect_class: defectData.value.defect_class,
+    judgment_points: defectData.value.judgment_points,
+    exclusions: defectData.value.exclusions
+  })
+  defectHistoryIndex.value = defectHistory.value.length - 1
+
+  // 限制历史记录数量
+  if (defectHistory.value.length > 50) {
+    defectHistory.value.shift()
+    defectHistoryIndex.value--
+  }
+}
+
+// 撤销缺陷描述
+function undoDefectDescription() {
+  if (defectHistoryIndex.value > 0) {
+    defectHistoryIndex.value--
+    isUndoRedo.value = true
+    defectData.value = { ...defectHistory.value[defectHistoryIndex.value] }
+    isUndoRedo.value = false
+  }
+}
+
+// 重做缺陷描述
+function redoDefectDescription() {
+  if (defectHistoryIndex.value < defectHistory.value.length - 1) {
+    defectHistoryIndex.value++
+    isUndoRedo.value = true
+    defectData.value = { ...defectHistory.value[defectHistoryIndex.value] }
+    isUndoRedo.value = false
+  }
+}
+
+// 全局键盘事件处理
+function handleGlobalKeyDown(e) {
+  // 只处理 Ctrl+Z 和 Ctrl+Y
+  if (!((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'y' || e.key === 'Z' || e.key === 'Y'))) {
+    return
+  }
+
+  e.preventDefault()
+
+  // 根据焦点区域决定撤销/重做哪个内容
+  if (focusArea.value === 'defect') {
+    // 缺陷描述区域
+    if (e.key === 'z' || e.key === 'Z') {
+      undoDefectDescription()
+    } else if (e.key === 'y' || e.key === 'Y') {
+      redoDefectDescription()
+    }
+  } else if (focusArea.value === 'canvas') {
+    // 画布区域 - 调用 annotation store 的撤销/重做
+    if (e.key === 'z' || e.key === 'Z') {
+      annotationStore.undo()
+    } else if (e.key === 'y' || e.key === 'Y') {
+      annotationStore.redo()
+    }
+  }
+}
+
 // 检测缺陷描述是否有变更
 const hasDefectDataChanges = computed(() => {
   if (!currentDefect.value) return false
@@ -506,6 +606,9 @@ watch(currentDefect, (defect) => {
       judgment_points: defect.judgment_points || '',
       exclusions: defect.exclusions || ''
     }
+    // 初始化缺陷描述历史
+    defectHistory.value = [{ ...defectData.value }]
+    defectHistoryIndex.value = 0
     loadVersions(defect.id)
   }
 }, { immediate: true })
@@ -908,6 +1011,69 @@ function openGlobalTemplate() {
   uiStore.openGlobalTemplateModal()
 }
 
+// 自动保存功能
+function startAutoSave() {
+  stopAutoSave()
+  if (autoSaveInterval.value > 0) {
+    autoSaveTimer.value = setInterval(async () => {
+      // 批量保存所有有未保存修改的标注
+      if (annotationStore.totalUnsavedCount > 0) {
+        try {
+          await annotationStore.saveAllAnnotations()
+          console.log(`[自动保存] 已保存 ${annotationStore.totalUnsavedCount} 个测试用例的标注`)
+        } catch (error) {
+          console.error('[自动保存] 保存失败:', error)
+        }
+      }
+    }, autoSaveInterval.value)
+  }
+}
+
+function stopAutoSave() {
+  if (autoSaveTimer.value) {
+    clearInterval(autoSaveTimer.value)
+    autoSaveTimer.value = null
+  }
+}
+
+// 保存缺陷描述
+async function saveDefectDescription() {
+  if (!currentDefect.value) return
+  try {
+    if (currentVersionId.value) {
+      // 更新现有版本
+      await api.put(`/api/defect_version/${currentVersionId.value}`, {
+        defect_cn: defectData.value.defect_cn,
+        defect_class: defectData.value.defect_class,
+        judgment_points: defectData.value.judgment_points,
+        exclusions: defectData.value.exclusions
+      })
+    } else {
+      // 创建新版本
+      await api.post('/api/defect_version', {
+        defect_id: currentDefect.value.id,
+        defect_cn: defectData.value.defect_cn,
+        defect_class: defectData.value.defect_class,
+        judgment_points: defectData.value.judgment_points,
+        exclusions: defectData.value.exclusions,
+        summary: '保存修改'
+      })
+    }
+    // 更新当前缺陷数据
+    defectStore.updateCurrentDefect({
+      defect_cn: defectData.value.defect_cn,
+      defect_class: defectData.value.defect_class,
+      judgment_points: defectData.value.judgment_points,
+      exclusions: defectData.value.exclusions
+    })
+    // 刷新版本列表
+    await defectStore.fetchVersions(currentDefect.value.id)
+    uiStore.notify('缺陷描述已保存', 'success', '保存成功')
+  } catch (error) {
+    uiStore.notify('保存失败: ' + error.message, 'error', '保存失败')
+  }
+}
+
 async function publishVersion() {
   if (!currentDefect.value) return
   try {
@@ -1050,10 +1216,12 @@ onMounted(async () => {
   await fetchInferenceModels()
   startHealthCheck()
   checkLLMHealth()
+  startAutoSave()
 })
 
 onUnmounted(() => {
   stopHealthCheck()
+  stopAutoSave()
 })
 
 async function fetchLLMConfig() {
@@ -1186,8 +1354,163 @@ async function fetchLLMConfig() {
 }
 
 .stats {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* 下拉菜单 */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--card-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  min-width: 160px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.dropdown-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.dropdown-menu button:hover {
+  background: var(--hover-bg);
+}
+
+.dropdown-menu-right {
+  right: 0;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--glass-border);
+  margin: 4px 0;
+}
+
+.dropdown-label {
+  padding: 8px 14px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.autosave-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 8px 8px;
+}
+
+.autosave-option {
+  padding: 6px 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.autosave-option:hover {
+  border-color: var(--primary-color);
+}
+
+.autosave-option.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+/* Ghost 按钮 */
+.btn-ghost {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+}
+
+.btn-ghost:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+/* 状态徽章 */
+.status-badge {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.status-badge.online {
+  background: var(--success-color);
+  box-shadow: 0 0 6px var(--success-color);
+}
+
+.status-badge.offline {
+  background: var(--error-color);
+}
+
+.status-badge.checking {
+  background: var(--warning-color);
+  animation: pulse 1s infinite;
+}
+
+/* 紧凑版本对比 */
+.version-compare-compact {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.version-compare-compact .version-tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--primary-color);
+  color: white;
+  font-weight: 500;
+}
+
+.version-compare-compact .version-tag.muted {
+  background: var(--input-bg);
+  color: var(--text-secondary);
+}
+
+.version-compare-compact .compare-sep {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.history-count {
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: var(--input-bg);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: normal;
+  color: var(--text-muted);
 }
 
 .version-select {
