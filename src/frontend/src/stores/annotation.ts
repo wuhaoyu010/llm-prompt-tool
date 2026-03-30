@@ -130,6 +130,14 @@ export const useAnnotationStore = defineStore('annotation', () => {
       } else {
         testCases.value = []
       }
+
+      // 清理已删除测试用例的标注数据
+      const validIds = new Set(testCases.value.map(tc => tc.id))
+      Object.keys(annotations.value).forEach(id => {
+        if (!validIds.has(Number(id))) {
+          delete annotations.value[Number(id)]
+        }
+      })
     } catch (error) {
       console.error('Failed to fetch test cases:', error)
     }
@@ -206,10 +214,12 @@ export const useAnnotationStore = defineStore('annotation', () => {
     // 进入暂存模式
     enterStagingModeForId(targetTestCaseId)
 
-    const boxes = tcData.stagingBoxes
-    const index = boxes.findIndex(b => b.id === boxId)
+    const index = tcData.stagingBoxes.findIndex(b => b.id === boxId)
     if (index > -1) {
-      const removed = boxes.splice(index, 1)[0]
+      const removed = tcData.stagingBoxes[index]
+
+      // 使用filter创建新数组，而不是splice直接修改（Vue响应式要求）
+      tcData.stagingBoxes = tcData.stagingBoxes.filter((_, i) => i !== index)
 
       // 记录操作历史
       tcData.stagingHistory.push({
