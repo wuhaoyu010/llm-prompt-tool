@@ -121,8 +121,8 @@
             <span class="sample-badge" :class="tc.is_positive === false ? 'negative' : 'positive'">
               {{ tc.is_positive === false ? '✗ 反例' : '✓ 正例' }}
             </span>
-            <span v-if="tc.annotation_count > 0" class="annotation-count">
-              {{ tc.annotation_count }} 框
+            <span v-if="getAnnotationCount(tc.id) > 0" class="annotation-count">
+              {{ getAnnotationCount(tc.id) }} 框
             </span>
           </div>
           <div class="thumbnail-filename" :title="tc.filename">{{ tc.filename }}</div>
@@ -191,6 +191,7 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useUIStore } from '../stores/ui'
+import { useAnnotationStore } from '../stores/annotation'
 import { FILTER_TYPES, SORT_OPTIONS, VIEW_MODES } from '../utils/constants'
 
 // 缩略图滚动区域 ref
@@ -214,6 +215,19 @@ const props = defineProps({
 const emit = defineEmits(['select', 'delete', 'auto-annotate', 'batch-annotate', 'batch-delete', 'batch-set-type', 'update:selectedIds'])
 
 const uiStore = useUIStore()
+const annotationStore = useAnnotationStore()
+
+// 获取测试用例的标注框数量（优先从store读取，fallback到props）
+function getAnnotationCount(tcId) {
+  const tcData = annotationStore.annotations[tcId]
+  if (tcData) {
+    // 如果在暂存模式，返回暂存区数量；否则返回已保存数量
+    return tcData.isStaging ? tcData.stagingBoxes.length : tcData.savedBoxes.length
+  }
+  // Fallback到testCases中的annotation_count
+  const tc = props.testCases.find(t => t.id === tcId)
+  return tc?.annotation_count || 0
+}
 
 // 视图模式
 const viewMode = ref(VIEW_MODES.GRID)
@@ -243,10 +257,10 @@ const filteredTestCases = computed(() => {
       result = result.filter(tc => tc.is_positive === false)
       break
     case FILTER_TYPES.ANNOTATED:
-      result = result.filter(tc => tc.annotation_count > 0)
+      result = result.filter(tc => getAnnotationCount(tc.id) > 0)
       break
     case FILTER_TYPES.UNANNOTATED:
-      result = result.filter(tc => !tc.annotation_count || tc.annotation_count === 0)
+      result = result.filter(tc => getAnnotationCount(tc.id) === 0)
       break
   }
 
@@ -265,7 +279,7 @@ const sortedTestCases = computed(() => {
       result.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
       break
     case SORT_OPTIONS.ANNOTATIONS:
-      result.sort((a, b) => (b.annotation_count || 0) - (a.annotation_count || 0))
+      result.sort((a, b) => getAnnotationCount(b.id) - getAnnotationCount(a.id))
       break
   }
 

@@ -223,8 +223,8 @@ const lastPanPosition = ref({ x: 0, y: 0 })
 const canUndo = computed(() => annotationStore.history.length > 0)
 const canRedo = computed(() => annotationStore.redoStack.length > 0)
 
-// Computed
-const boxes = computed(() => annotationStore.currentAnnotations)
+// Computed - 确保boxes始终是数组，即使Store返回undefined
+const boxes = computed(() => annotationStore.currentAnnotations || [])
 
 // Stage config
 const stageConfig = computed(() => ({
@@ -471,17 +471,23 @@ function handleTransformEnd(e, box) {
   node.scaleX(1)
   node.scaleY(1)
 
-  const newX = pixelToNorm(node.x(), imageNaturalSize.value.width)
-  const newY = pixelToNorm(node.y(), imageNaturalSize.value.height)
-  const newW = pixelToNorm(node.width() * scaleX, imageNaturalSize.value.width)
-  const newH = pixelToNorm(node.height() * scaleY, imageNaturalSize.value.height)
+  // 添加边界检查，确保坐标在图像范围内
+  const imageX = Math.max(0, Math.min(imageNaturalSize.value.width, node.x()))
+  const imageY = Math.max(0, Math.min(imageNaturalSize.value.height, node.y()))
+  const imageW = Math.max(0, Math.min(imageNaturalSize.value.width - imageX, node.width() * scaleX))
+  const imageH = Math.max(0, Math.min(imageNaturalSize.value.height - imageY, node.height() * scaleY))
+
+  const newX = pixelToNorm(imageX, imageNaturalSize.value.width)
+  const newY = pixelToNorm(imageY, imageNaturalSize.value.height)
+  const newW = pixelToNorm(imageW, imageNaturalSize.value.width)
+  const newH = pixelToNorm(imageH, imageNaturalSize.value.height)
 
   const updatedBox = {
     ...box,
     x: Math.max(0, Math.min(999 - newW, newX)),
     y: Math.max(0, Math.min(999 - newH, newY)),
-    width: Math.max(10, Math.min(999 - newX, newW)),
-    height: Math.max(10, Math.min(999 - newY, newH))
+    width: Math.max(10, newW),
+    height: Math.max(10, newH)
   }
 
   annotationStore.updateBox(updatedBox)
@@ -568,12 +574,18 @@ function handleStageMouseUp() {
   if (drawingRect.value && drawingRect.value.width > 5 && drawingRect.value.height > 5) {
     const label = presetLabel.value || defectStore.currentDefect?.name || ''
 
+    // 转换到图像坐标系并添加边界检查
+    const imageX = Math.max(0, Math.min(imageNaturalSize.value.width, drawingRect.value.x))
+    const imageY = Math.max(0, Math.min(imageNaturalSize.value.height, drawingRect.value.y))
+    const imageW = Math.max(0, Math.min(imageNaturalSize.value.width - imageX, drawingRect.value.width))
+    const imageH = Math.max(0, Math.min(imageNaturalSize.value.height - imageY, drawingRect.value.height))
+
     const newBox = {
       id: `box_${Date.now()}`,
-      x: pixelToNorm(drawingRect.value.x, imageNaturalSize.value.width),
-      y: pixelToNorm(drawingRect.value.y, imageNaturalSize.value.height),
-      width: pixelToNorm(drawingRect.value.width, imageNaturalSize.value.width),
-      height: pixelToNorm(drawingRect.value.height, imageNaturalSize.value.height),
+      x: pixelToNorm(imageX, imageNaturalSize.value.width),
+      y: pixelToNorm(imageY, imageNaturalSize.value.height),
+      width: pixelToNorm(imageW, imageNaturalSize.value.width),
+      height: pixelToNorm(imageH, imageNaturalSize.value.height),
       label,
       type: 'rectangle'
     }
@@ -741,19 +753,22 @@ watch(() => props.imageUrl, (newUrl, oldUrl) => {
   loadImage()
 }, { immediate: true })
 
-// 当 boxes 变化时，验证选中 ID 是否仍然有效
+// 当 boxes 变化时，确保Transformer与boxes同步
 watch(boxes, (newBoxes) => {
+  // 如果有选中的box，检查是否仍然存在
   if (selectedBoxId.value) {
     const exists = newBoxes.some(b => b.id === selectedBoxId.value)
     if (!exists) {
       selectedBoxId.value = null
-      const transformer = transformerRef.value?.getNode()
-      if (transformer) {
-        transformer.nodes([])
-      }
     }
   }
-})
+
+  // 无论是否有选中，都更新Transformer以确保同步
+  // 这解决了通过JS API直接操作Store时Transformer未更新的问题
+  nextTick(() => {
+    updateTransformer()
+  })
+}, { deep: true })
 
 watch(() => defectStore.currentDefect, (defect) => {
   if (defect && !presetLabel.value) {

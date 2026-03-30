@@ -314,19 +314,22 @@ def run_mock_llm(formatted_prompt, boxes_count):
     """
     Mock LLM 调用，用于测试
 
+    注意：Mock LLM看不到图片，无法做出真实判断。
+    返回"U"（不确定）状态，提示用户使用真实LLM验证。
+
     参数:
         formatted_prompt: 格式化后的 Prompt
         boxes_count: 标注框数量
 
     返回:
-        模拟验证结果列表
+        模拟验证结果列表，所有框返回"U"状态
     """
     import time
     time.sleep(2)
     return [{
         "box_id": i,
-        "status": "Y",
-        "reason": "模拟结果：检测到缺陷"
+        "status": "U",
+        "reason": "Mock模式：需使用真实LLM验证"
     } for i in range(boxes_count)]
 
 

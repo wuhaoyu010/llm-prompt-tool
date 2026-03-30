@@ -59,9 +59,9 @@
           <h2>图片标注</h2>
           <div class="header-actions">
             <span class="stats">{{ totalCount }}张 · 正{{ positiveCount }} · 反{{ negativeCount }} · 已标注{{ annotatedCount }}</span>
-            <button class="btn btn-primary btn-sm" @click="saveAnnotations" :disabled="!isDirty">
+            <button class="btn btn-primary btn-sm" @click="saveAnnotations" :disabled="totalUnsavedCount === 0">
               <span class="material-icons">save</span>
-              <span class="btn-text">保存</span>
+              <span class="btn-text">保存{{ totalUnsavedCount > 0 ? ` (${totalUnsavedCount})` : '' }}</span>
             </button>
             <button class="btn btn-ghost btn-sm" @click="openBatchAnnotate">
               <span class="material-icons">auto_awesome</span>
@@ -380,6 +380,7 @@ const versions = computed(() => defectStore.versions)
 const testCases = computed(() => annotationStore.testCases)
 const currentTestCaseId = computed(() => annotationStore.currentTestCaseId)
 const isDirty = computed(() => annotationStore.isDirty)
+const totalUnsavedCount = computed(() => annotationStore.totalUnsavedCount)
 
 const searchQuery = ref('')
 const canvasWidth = ref(1200)
@@ -738,6 +739,7 @@ async function runVersionComparison() {
         api.post(`/api/defect/${currentDefect.value.id}/inference`, {
           test_case_id: currentTestCaseId.value,
           model: inferenceModel.value || undefined,
+          use_real_llm: true, // 使用真实LLM验证
           // 传入修改后的自定义缺陷描述
           defect_cn: defectData.value.defect_cn,
           defect_class: defectData.value.defect_class,
@@ -747,7 +749,8 @@ async function runVersionComparison() {
         api.post(`/api/defect/${currentDefect.value.id}/inference`, {
           test_case_id: currentTestCaseId.value,
           version_id: currentVersionId.value,
-          model: inferenceModel.value || undefined
+          model: inferenceModel.value || undefined,
+          use_real_llm: true // 使用真实LLM验证
         })
       ])
     } else {
@@ -756,12 +759,14 @@ async function runVersionComparison() {
         api.post(`/api/defect/${currentDefect.value.id}/inference`, {
           test_case_id: currentTestCaseId.value,
           version_id: currentVersionId.value,
-          model: inferenceModel.value || undefined
+          model: inferenceModel.value || undefined,
+          use_real_llm: true // 使用真实LLM验证
         }),
         api.post(`/api/defect/${currentDefect.value.id}/inference`, {
           test_case_id: currentTestCaseId.value,
           version_id: currentVersionId.value,
-          model: inferenceModel.value || undefined
+          model: inferenceModel.value || undefined,
+          use_real_llm: true // 使用真实LLM验证
         })
       ])
     }
@@ -979,10 +984,10 @@ function onBoxesChanged() {
 }
 
 async function saveAnnotations() {
-  if (!currentTestCaseId.value || !isDirty.value) return
+  if (totalUnsavedCount.value === 0) return
   try {
-    await annotationStore.saveAnnotations(currentTestCaseId.value)
-    uiStore.notify('标注已保存', 'success', '保存成功')
+    await annotationStore.saveAllAnnotations()
+    uiStore.notify(`已保存 ${totalUnsavedCount.value} 个测试用例的标注`, 'success', '保存成功')
   } catch (error) {
     uiStore.notify('保存失败: ' + error.message, 'error', '保存失败')
   }
@@ -1107,7 +1112,7 @@ async function runRegressionTest() {
     const result = await api.post('/api/regression_test', {
       defect_id: currentDefect.value.id,
       version_id: currentVersionId.value || undefined,
-      use_real_llm: false,
+      use_real_llm: true, // 使用真实LLM验证
       model_name: inferenceModel.value || undefined
     }, { timeout: 300000 })
 

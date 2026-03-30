@@ -71,12 +71,15 @@ export const useAnnotationStore = defineStore('annotation', () => {
     if (!currentTestCaseId.value) return []
     const tcData = annotations.value[currentTestCaseId.value]
     if (!tcData) return []
+
     // 如果正在暂存，返回暂存区数据
     if (tcData.isStaging) {
-      return tcData.stagingBoxes
+      return tcData.stagingBoxes || []
     }
+
     // 否则返回已保存数据
-    return tcData.savedBoxes
+    // 添加fallback确保永远返回数组，防止undefined导致Konva渲染失败
+    return tcData.savedBoxes || []
   })
 
   // 所有有未保存修改的测试用例ID列表
