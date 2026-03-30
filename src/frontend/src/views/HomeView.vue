@@ -1200,6 +1200,15 @@ function formatDate(dateStr) {
   return date.toLocaleString('zh-CN')
 }
 
+// 处理LLM配置更新事件
+function handleLLMConfigUpdate(event) {
+  if (event.detail && event.detail.model) {
+    inferenceModel.value = event.detail.model
+    // 同时刷新模型列表
+    fetchInferenceModels()
+  }
+}
+
 onMounted(async () => {
   await defectStore.fetchDefects()
   await fetchLLMConfig()
@@ -1207,11 +1216,17 @@ onMounted(async () => {
   startHealthCheck()
   checkLLMHealth()
   startAutoSave()
+
+  // 监听LLM配置更新事件
+  window.addEventListener('llm-config-updated', handleLLMConfigUpdate)
 })
 
 onUnmounted(() => {
   stopHealthCheck()
   stopAutoSave()
+
+  // 移除事件监听器
+  window.removeEventListener('llm-config-updated', handleLLMConfigUpdate)
 })
 
 async function fetchLLMConfig() {

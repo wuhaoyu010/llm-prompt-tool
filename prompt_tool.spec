@@ -39,7 +39,10 @@ a = Analysis(
         'cryptography',
         'bcrypt',
         'nacl',
+        # OpenCV相关模块 - 明确指定所有需要的子模块
         'cv2',
+        'cv2.cv2',
+        'numpy',
         'openai',
     ],
     excludes=[

@@ -417,6 +417,11 @@ async function saveSettings() {
       })
     ])
 
+    // 保存成功后通知其他组件更新模型
+    window.dispatchEvent(new CustomEvent('llm-config-updated', {
+      detail: { model: settings.value.model }
+    }))
+
     uiStore.notify('设置已保存', 'success', '成功')
     close()
   } catch (error) {
@@ -444,6 +449,11 @@ async function testModel() {
     if (result.status === 'online') {
       testResult.value = '✓ 模型服务正常'
       testError.value = false
+
+      // 测试成功后通知其他组件更新模型
+      window.dispatchEvent(new CustomEvent('llm-config-updated', {
+        detail: { model: settings.value.model }
+      }))
     } else {
       testResult.value = '✗ ' + (result.message || '模型服务异常')
       testError.value = true
@@ -514,6 +524,8 @@ async function fetchAvailableModels() {
     const result = await api.get('/api/models')
     if (result.models) {
       availableModels.value = result.models
+      // 刷新成功后自动显示下拉列表
+      showModelDropdown.value = true
     }
   } catch (error) {
     console.error('Failed to fetch models:', error)
