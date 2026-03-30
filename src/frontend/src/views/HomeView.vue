@@ -18,15 +18,8 @@
             </select>
             <button class="btn btn-ghost btn-sm" @click="cancelEdit" v-if="hasDefectDataChanges">取消</button>
             <button class="btn btn-primary btn-sm" @click="saveDefectDescription" :disabled="!hasDefectDataChanges">保存修改</button>
-            <div class="dropdown">
-              <button class="btn btn-ghost btn-sm" @click="showDefectMenu = !showDefectMenu">
-                <span class="material-icons">more_horiz</span>
-              </button>
-              <div v-if="showDefectMenu" class="dropdown-menu">
-                <button @click="openGlobalTemplate(); showDefectMenu = false">编辑全局模板</button>
-                <button @click="publishVersion(); showDefectMenu = false">发布新版本</button>
-              </div>
-            </div>
+            <button class="btn btn-ghost btn-sm" @click="openGlobalTemplate">编辑全局模板</button>
+            <button class="btn btn-ghost btn-sm" @click="publishVersion">发布新版本</button>
           </div>
         </div>
 
@@ -70,27 +63,21 @@
               <span class="material-icons">save</span>
               <span class="btn-text">保存</span>
             </button>
-            <div class="dropdown">
-              <button class="btn btn-ghost btn-sm" @click="showAnnotationMenu = !showAnnotationMenu" title="更多操作">
-                <span class="material-icons">more_horiz</span>
-              </button>
-              <div v-if="showAnnotationMenu" class="dropdown-menu dropdown-menu-right">
-                <button @click="openBatchAnnotate(); showAnnotationMenu = false">
-                  <span class="material-icons">auto_awesome</span> 批量标注
-                </button>
-                <button @click="openBatchImport(); showAnnotationMenu = false">
-                  <span class="material-icons">add_photo_alternate</span> 批量导入
-                </button>
-                <div class="dropdown-divider"></div>
-                <div class="dropdown-label">自动保存间隔</div>
-                <div class="autosave-options">
-                  <button v-for="opt in autoSaveOptions" :key="opt.value"
-                    :class="['autosave-option', { active: autoSaveInterval === opt.value }]"
-                    @click="autoSaveInterval = opt.value; startAutoSave(); showAnnotationMenu = false">
-                    {{ opt.label }}
-                  </button>
-                </div>
-              </div>
+            <button class="btn btn-ghost btn-sm" @click="openBatchAnnotate">
+              <span class="material-icons">auto_awesome</span>
+              <span class="btn-text">批量标注</span>
+            </button>
+            <button class="btn btn-ghost btn-sm" @click="openBatchImport">
+              <span class="material-icons">add_photo_alternate</span>
+              <span class="btn-text">批量导入</span>
+            </button>
+            <div class="autosave-select">
+              <label>自动保存:</label>
+              <select v-model="autoSaveInterval" @change="startAutoSave" class="autosave-dropdown">
+                <option v-for="opt in autoSaveOptions" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
             </div>
           </div>
         </div>
@@ -503,8 +490,6 @@ const defectData = ref({
 
 // 焦点区域追踪：'defect' | 'canvas' | null
 const focusArea = ref(null)
-const showDefectMenu = ref(false)
-const showAnnotationMenu = ref(false)
 
 // 缺陷描述撤销历史
 const defectHistory = ref([])
@@ -1364,81 +1349,32 @@ async function fetchLLMConfig() {
   position: relative;
 }
 
-.dropdown-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 4px;
-  background: var(--card-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: 8px;
-  min-width: 160px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  z-index: 100;
-  overflow: hidden;
-}
-
-.dropdown-menu button {
+.autosave-select {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 14px;
-  background: none;
-  border: none;
-  color: var(--text-primary);
-  font-size: 13px;
-  cursor: pointer;
-  text-align: left;
+  gap: 6px;
+  margin-left: 8px;
 }
 
-.dropdown-menu button:hover {
-  background: var(--hover-bg);
+.autosave-select label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 
-.dropdown-menu-right {
-  right: 0;
-}
-
-.dropdown-divider {
-  height: 1px;
-  background: var(--glass-border);
-  margin: 4px 0;
-}
-
-.dropdown-label {
-  padding: 8px 14px;
-  font-size: 11px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.autosave-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 4px 8px 8px;
-}
-
-.autosave-option {
-  padding: 6px 10px;
+.autosave-dropdown {
+  padding: 4px 8px;
+  border-radius: 4px;
   background: var(--input-bg);
   border: 1px solid var(--glass-border);
-  border-radius: 4px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-size: 12px;
   cursor: pointer;
 }
 
-.autosave-option:hover {
+.autosave-dropdown:focus {
+  outline: none;
   border-color: var(--primary-color);
-}
-
-.autosave-option.active {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-  color: white;
 }
 
 /* Ghost 按钮 */
