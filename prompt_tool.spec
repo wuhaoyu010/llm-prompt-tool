@@ -45,7 +45,7 @@ a = Analysis(
     excludes=[
         'tkinter',
         'matplotlib',
-        'numpy',
+        # 'numpy',  # 不能排除numpy，cv2依赖它
         'pandas',
         'pytest',
         'IPython',
